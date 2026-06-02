@@ -1,23 +1,33 @@
 import { Module } from '@nestjs/common';
 import { MemberModule } from './member/member.module';
-import { PropertyModule } from './property/property.module';
+import { TourModule } from './tour/tour.module';
 import { AuthModule } from './auth/auth.module';
 import { CommentModule } from './comment/comment.module';
 import { LikeModule } from './like/like.module';
 import { ViewModule } from './view/view.module';
 import { FollowModule } from './follow/follow.module';
 import { BoardArticleModule } from './board-article/board-article.module';
+import { DestinationModule } from './destination/destination.module';
+import { TourScheduleModule } from './tour-schedule/tour-schedule.module';
+import { BookingModule } from './booking/booking.module';
+import { WishlistModule } from './wishlist/wishlist.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
 	imports: [
 		MemberModule,
 		AuthModule,
-		PropertyModule,
+		TourModule,
 		BoardArticleModule,
 		LikeModule,
 		ViewModule,
 		CommentModule,
 		FollowModule,
+		DestinationModule,
+		TourScheduleModule,
+		BookingModule,
+		WishlistModule,
+		PaymentModule,
 	],
 })
 export class ComponentsModule {}

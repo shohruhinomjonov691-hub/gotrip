@@ -42,9 +42,14 @@ const NotificationSchema = new Schema(
 			ref: 'Member',
 		},
 
-		propertyId: {
+		tourId: {
 			type: Schema.Types.ObjectId,
-			ref: 'Property',
+			ref: 'Tour',
+		},
+
+		bookingId: {
+			type: Schema.Types.ObjectId,
+			ref: 'Booking',
 		},
 
 		articleId: {

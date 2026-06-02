@@ -20,6 +20,11 @@ export class CommentInput {
 	@Field(() => String)
 	commentRefId: mongoose.ObjectId;
 
+	@IsOptional()
+	@Min(1)
+	@Field(() => Int, { nullable: true })
+	rating?: number;
+
 	memberId?: mongoose.ObjectId;
 }
 

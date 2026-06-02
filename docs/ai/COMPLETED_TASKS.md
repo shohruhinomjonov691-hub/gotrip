@@ -2,35 +2,21 @@
 
 ## Session Summary
 
-This session completed the safe Nestar -> GoTrip identity rename for the backend monorepo. The change was limited to visible project/app identity and did not alter business logic, GraphQL APIs, MongoDB collections, Mongoose models, DTOs, schemas, or real-estate domain fields.
+Completed the breaking backend migration from the old real-estate `Property` catalog domain to the GoTrip travel `Tour` domain. `MemberType.USER`, `MemberType.AGENT`, and `MemberType.ADMIN` remain unchanged, and `MemberType.AGENT` remains the tour owner/operator role.
 
 ## Completed Refactors
 
-| Area | Completed Change | Files/Modules |
-| --- | --- | --- |
-| App folders | Renamed API app folder | `apps/nestar-api` -> `apps/gotrip-api` |
-| App folders | Renamed batch app folder | `apps/nestar-batch` -> `apps/gotrip-batch` |
-| Nest project graph | Renamed project keys and roots | `nest-cli.json` |
-| Package identity | Renamed package from `nestar` to `gotrip` | `package.json`, `package-lock.json` |
-| Scripts | Updated batch dev script, production paths, e2e config path | `package.json` |
-| Build output | Updated TypeScript output directories | `apps/gotrip-api/tsconfig.app.json`, `apps/gotrip-batch/tsconfig.app.json` |
-| Absolute imports | Updated imports from old app path to new app path | Batch module/service and auth guard imports |
-| Runtime labels | Updated welcome strings to GoTrip | API app service, batch service |
-| Test labels | Updated batch e2e describe label | `apps/gotrip-batch/test/app.e2e-spec.ts` |
-| Environment label | Updated MongoDB database name to `GoTrip` | `.env` |
-
-## Explicitly Unchanged
-
-| Area | Status |
+| Area | Completed Change |
 | --- | --- |
-| GraphQL query/mutation names | Unchanged |
-| GraphQL object/input/update names | Unchanged |
-| Mongoose model names | Unchanged |
-| MongoDB collection names | Unchanged |
-| Property/Agent domain concepts | Unchanged |
-| Service logic and resolver behavior | Unchanged |
-| Batch ranking formulas | Unchanged |
-| Auth, guards, uploads, likes, views, comments, follows | Unchanged |
+| Catalog module | Replaced `property` module with `tour` module |
+| GraphQL API | Replaced public property operations/types with tour operations/types |
+| Tour model | Added ERD tour fields and removed real-estate-only fields |
+| Enums | Added `TourCategory`, updated `TourStatus`, and added `BookingStatus` |
+| Member counters | Renamed `memberProperties` to `memberTours` |
+| Social modules | Likes, views, comments, and notifications now use tour naming |
+| Comments | Added optional `rating` field for tour reviews |
+| ERD collections | Added schemas/modules for destinations, tour schedules, bookings, wishlists, and payments |
+| Batch app | Updated ranking jobs to calculate `tourRank` and agent rank from `memberTours` |
 
 ## Validation Status
 
@@ -38,15 +24,15 @@ This session completed the safe Nestar -> GoTrip identity rename for the backend
 | --- | --- | --- |
 | API typecheck | `npx tsc -p apps/gotrip-api/tsconfig.app.json --noEmit` | Passed |
 | Batch typecheck | `npx tsc -p apps/gotrip-batch/tsconfig.app.json --noEmit` | Passed |
-| Default Nest build | `npm run build` | Passed |
-| Direct batch build | `npx nest build gotrip-batch` | Passed |
-| Branding search | `rg -n "Nestar\|nestar\|NESTAR" -g '!node_modules' -g '!dist' -g '!build'` | Passed |
-| Non-mutating lint | `npx eslint "{src,apps,libs,test}/**/*.ts"` | Blocked |
-| Project lint script | `npm run lint` | Blocked |
+| Full build | `npm run build` | Passed |
+| Default Jest suite | `npm test -- --runInBand` | No tests found by current Jest regex |
+| API e2e smoke | `npm run test:e2e` | Blocked by MongoDB SRV DNS/network `ECONNREFUSED` |
 
-## Lint Blocker
+## Remaining Work
 
-Lint did not reach file analysis. It failed because `eslint.config.mjs` imports `typescript-eslint`, but the workspace dependencies currently include `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser`, not the aggregate `typescript-eslint` package.
-
-This blocker is unrelated to the rename behavior and should be fixed before future source-code changes.
-
+| Area | Next Step |
+| --- | --- |
+| Data | Migrate existing `properties` documents into `tours` with curated tour defaults |
+| Frontend | Update GraphQL documents and UI adapters to call tour operations directly |
+| Booking API | Add resolvers/services for full booking, payment, schedule, wishlist, and destination workflows |
+| Tests | Add behavior tests around tour CRUD, saved/visited tours, comments/ratings, bookings, and batch ranking |

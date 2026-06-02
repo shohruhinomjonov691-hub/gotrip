@@ -1,72 +1,91 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
 import { IsIn, IsInt, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
-import { PropertyLocation, PropertyStatus, PropertyType } from '../../enums/property.enum';
+import { TourCategory, TourDifficulty, TourLanguage, TourLocation, TourStatus } from '../../enums/tour.enum';
 import * as mongoose from 'mongoose';
-import { availableOptions, availablePropertySorts } from '../../config';
+import { availableTourSorts } from '../../config';
 import { Direction } from '../../enums/common.enum';
 
 @InputType()
-export class PropertyInput {
+export class TourInput {
 	@IsNotEmpty()
-	@Field(() => PropertyType)
-	propertyType: PropertyType;
+	@Field(() => TourCategory)
+	tourCategory: TourCategory;
 
 	@IsNotEmpty()
-	@Field(() => PropertyLocation)
-	propertyLocation: PropertyLocation;
-
-	@IsNotEmpty()
-	@Length(3, 100)
-	@Field(() => String)
-	propertyAddress: String;
+	@Field(() => TourLocation)
+	tourLocation: TourLocation;
 
 	@IsNotEmpty()
 	@Length(3, 100)
 	@Field(() => String)
-	propertyTitle: String;
+	tourTitle: String;
 
 	@IsNotEmpty()
 	@Field(() => Number)
-	propertyPrice: number;
-
-	@IsNotEmpty()
-	@Field(() => Number)
-	propertySquare: number;
+	tourPrice: number;
 
 	@IsNotEmpty()
 	@IsInt()
 	@Min(1)
 	@Field(() => Int)
-	propertyBeds: number;
+	tourDuration: number;
 
 	@IsNotEmpty()
 	@IsInt()
 	@Min(1)
 	@Field(() => Int)
-	propertyRooms: number;
+	tourMaxPeople: number;
+
+	@IsNotEmpty()
+	@IsInt()
+	@Min(1)
+	@Field(() => Int)
+	tourMinPeople: number;
+
+	@IsNotEmpty()
+	@IsInt()
+	@Min(0)
+	@Field(() => Int)
+	tourAvailableSeats: number;
 
 	@IsNotEmpty()
 	@Field(() => [String])
-	propertyImages: string[];
+	tourImages: string[];
 
 	@IsOptional()
 	@Length(5, 500)
 	@Field(() => String, { nullable: true })
-	propertyDesc?: string;
+	tourDesc?: string;
 
 	@IsOptional()
-	@Field(() => Boolean, { nullable: true })
-	propertyBarter?: boolean;
+	@Field(() => [String], { nullable: true })
+	tourItinerary?: string[];
 
 	@IsOptional()
-	@Field(() => Boolean, { nullable: true })
-	propertyRent?: boolean;
+	@Field(() => [String], { nullable: true })
+	tourIncluded?: string[];
+
+	@IsOptional()
+	@Field(() => [String], { nullable: true })
+	tourExcluded?: string[];
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	tourMeetingPoint?: string;
+
+	@IsOptional()
+	@Field(() => TourLanguage, { nullable: true })
+	tourLanguage?: TourLanguage;
+
+	@IsOptional()
+	@Field(() => TourDifficulty, { nullable: true })
+	tourDifficulty?: TourDifficulty;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	destinationId?: mongoose.ObjectId;
 
 	memberId?: mongoose.ObjectId;
-
-	@IsOptional()
-	@Field(() => Date, { nullable: true })
-	constructedAt?: Date;
 }
 
 @InputType()
@@ -79,14 +98,6 @@ export class PricesRange {
 }
 
 @InputType()
-export class SquaresRange {
-	@Field(() => Int)
-	start: number;
-
-	@Field(() => Int)
-	end: number;
-}
-
 @InputType()
 export class PeriodsRange {
 	@Field(() => Date)
@@ -103,25 +114,12 @@ class PISearch {
 	memberId?: mongoose.ObjectId;
 
 	@IsOptional()
-	@Field(() => [PropertyLocation], { nullable: true })
-	locationList?: PropertyLocation[];
+	@Field(() => [TourLocation], { nullable: true })
+	locationList?: TourLocation[];
 
 	@IsOptional()
-	@Field(() => [PropertyType], { nullable: true })
-	typeList?: PropertyType;
-
-	@IsOptional()
-	@Field(() => [Int], { nullable: true })
-	roomsList?: Number[];
-
-	@IsOptional()
-	@Field(() => [Int], { nullable: true })
-	bedsList?: Number[];
-
-	@IsOptional()
-	@IsIn(availableOptions, { each: true })
-	@Field(() => [String], { nullable: true })
-	options?: string[];
+	@Field(() => [TourCategory], { nullable: true })
+	categoryList?: TourCategory[];
 
 	@IsOptional()
 	@Field(() => PricesRange, { nullable: true })
@@ -132,8 +130,8 @@ class PISearch {
 	periodsRange?: PeriodsRange;
 
 	@IsOptional()
-	@Field(() => SquaresRange, { nullable: true })
-	squaresRange?: SquaresRange;
+	@Field(() => PricesRange, { nullable: true })
+	durationRange?: PricesRange;
 
 	@IsOptional()
 	@Field(() => String, { nullable: true })
@@ -141,7 +139,7 @@ class PISearch {
 }
 
 @InputType()
-export class PropertiesInquiry {
+export class ToursInquiry {
 	@IsNotEmpty()
 	@Min(1)
 	@Field(() => Int)
@@ -153,7 +151,7 @@ export class PropertiesInquiry {
 	limit: number;
 
 	@IsOptional()
-	@IsIn(availablePropertySorts)
+	@IsIn(availableTourSorts)
 	@Field(() => String, { nullable: true })
 	sort?: string;
 
@@ -169,12 +167,12 @@ export class PropertiesInquiry {
 @InputType()
 class APISearch {
 	@IsOptional()
-	@Field(() => PropertyStatus, { nullable: true })
-	propertyStatus?: PropertyStatus;
+	@Field(() => TourStatus, { nullable: true })
+	tourStatus?: TourStatus;
 }
 
 @InputType()
-export class AgentPropertiesInquiry {
+export class AgentToursInquiry {
 	@IsNotEmpty()
 	@Min(1)
 	@Field(() => Int)
@@ -186,7 +184,7 @@ export class AgentPropertiesInquiry {
 	limit: number;
 
 	@IsOptional()
-	@IsIn(availablePropertySorts)
+	@IsIn(availableTourSorts)
 	@Field(() => String, { nullable: true })
 	sort?: string;
 
@@ -202,16 +200,20 @@ export class AgentPropertiesInquiry {
 @InputType()
 class ALPISearch {
 	@IsOptional()
-	@Field(() => PropertyStatus, { nullable: true })
-	propertyStatus?: PropertyStatus;
+	@Field(() => TourStatus, { nullable: true })
+	tourStatus?: TourStatus;
 
 	@IsOptional()
-	@Field(() => [PropertyLocation], { nullable: true })
-	propertyLocationList?: PropertyLocation[];
+	@Field(() => [TourLocation], { nullable: true })
+	tourLocationList?: TourLocation[];
+
+	@IsOptional()
+	@Field(() => [TourCategory], { nullable: true })
+	tourCategoryList?: TourCategory[];
 }
 
 @InputType()
-export class AllPropertiesInquiry {
+export class AllToursInquiry {
 	@IsNotEmpty()
 	@Min(1)
 	@Field(() => Int)
@@ -223,7 +225,7 @@ export class AllPropertiesInquiry {
 	limit: number;
 
 	@IsOptional()
-	@IsIn(availablePropertySorts)
+	@IsIn(availableTourSorts)
 	@Field(() => String, { nullable: true })
 	sort?: string;
 
