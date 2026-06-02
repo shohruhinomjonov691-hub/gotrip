@@ -2,3 +2,52 @@
 
 GoTrip is a NestJS GraphQL monorepo migrated from Real estate platform into a
 Travel Tour Booking Platform
+
+## Read First
+
+Before changing code, read the current AI handoff docs:
+
+- `docs/BACKEND_MIGRATION.md`
+- `docs/DECISIONS.md`
+- `docs/COMPLETED_TASK.md`
+- `docs/NEXT_STEPS.md`
+
+Use those files as the source of truth for AI Agent related migration history, accepted decisions, remaining work and validation status.
+
+## Project Shape
+
+- Backend apps are `gotrip-api` and `gotrip-batch`.
+- Keep the existing NestJS resolver/service/module pattern based on MVC and DI.
+- Keep DTOs, enums, schemas under `apps/gotrip-api/src/libs`.
+- Keep shared modules reusable: auth, member, like, view, comment, follow, board article, socket.
+
+## Domain Rules
+
+- Use GoTrip/tour terminology for the main catalog entity.
+- Do not reintroduce property or real-estate fields.
+- Keep `MemberType.USER`, `MemberType.AGENT` and `MemberType.ADMIN` unchanged.
+- Tour ownership continues to use `MemberType.AGENT` unless a later migration explicitly changes it.
+- Tour enum values are:
+  - `tourCategory`: `ADVENTURE`, `CULTURAL`, `HISTORICAL`, `BEACH`, `MOUNTAIN`, `CITY`, `CRUISE`
+  - `tourStatus`: `ACTIVE`, `SOLD_OUT`, `PAUSED`, `DELETED`
+  - `bookingStatus`: `PENDING`, `CONFIRMED`, `CANCELLED`, `COMPLETED`
+
+## Workflow
+
+1. Analyze before editing.
+2. Keep changes small and consistent with existing project patterns.
+3. Do not remove working logic unless it is replaced safely.
+4. Update `docs/AI/COMPLETED_TASKS.md` after major completed work.
+5. Add or update focused tests when behavior changes.
+
+## Validation
+
+Use these checks for backend work:
+
+```bash
+npx tsc -p apps/gotrip-api/tsconfig.app.json --noEmit
+npx tsc -p apps/gotrip-batch/tsconfig.app.json --noEmit
+npm run build
+```
+
+`npm run lint` runs ESLint with `--fix`, so use it only when file rewriting is acceptable.
