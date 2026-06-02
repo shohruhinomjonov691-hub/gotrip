@@ -7,10 +7,10 @@ Travel Tour Booking Platform
 
 Before changing code, read the current AI handoff docs:
 
-- `docs/BACKEND_MIGRATION.md`
-- `docs/DECISIONS.md`
-- `docs/COMPLETED_TASK.md`
-- `docs/NEXT_STEPS.md`
+- `docs/ai/BACKEND_MIGRATION.md`
+- `docs/ai/DECISIONS.md`
+- `docs/ai/COMPLETED_TASK.md`
+- `docs/ai/NEXT_STEPS.md`
 
 Use those files as the source of truth for AI Agent related migration history, accepted decisions, remaining work and validation status.
 
@@ -37,7 +37,7 @@ Use those files as the source of truth for AI Agent related migration history, a
 1. Analyze before editing.
 2. Keep changes small and consistent with existing project patterns.
 3. Do not remove working logic unless it is replaced safely.
-4. Update `docs/AI/COMPLETED_TASKS.md` after major completed work.
+4. Update `docs/ai/COMPLETED_TASKS.md` after major completed work.
 5. Add or update focused tests when behavior changes.
 
 ## Validation
