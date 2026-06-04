@@ -31,7 +31,7 @@ export class TourScheduleService {
 				scheduleStatus,
 			});
 		} catch (err) {
-			console.log('Error, Service.model:', err.message);
+			console.log('Error, Service.model:', err);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 	}
@@ -139,7 +139,7 @@ export class TourScheduleService {
 				scheduleStatus,
 			});
 		} catch (err) {
-			console.log('Error, Service.model:', err.message);
+			console.log('Error, Service.model:', err);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 	}
@@ -207,8 +207,10 @@ export class TourScheduleService {
 		if (input.startDate && input.endDate && new Date(input.endDate).getTime() < new Date(input.startDate).getTime()) {
 			throw new BadRequestException(Message.BAD_REQUEST);
 		}
-		if (input.availableSeats !== undefined && input.availableSeats < 1) throw new BadRequestException(Message.BAD_REQUEST);
-		if (input.reservedSeats !== undefined && input.reservedSeats < 0) throw new BadRequestException(Message.BAD_REQUEST);
+		if (input.availableSeats !== undefined && input.availableSeats < 1)
+			throw new BadRequestException(Message.BAD_REQUEST);
+		if (input.reservedSeats !== undefined && input.reservedSeats < 0)
+			throw new BadRequestException(Message.BAD_REQUEST);
 		if (input.price !== undefined && input.price < 0) throw new BadRequestException(Message.BAD_REQUEST);
 		if (
 			input.availableSeats !== undefined &&
@@ -288,7 +290,14 @@ export class TourScheduleService {
 			scheduleStatus:
 				modifier > 0
 					? TourScheduleStatus.ACTIVE
-					: { $in: [TourScheduleStatus.ACTIVE, TourScheduleStatus.FULL, TourScheduleStatus.PAUSED, TourScheduleStatus.DELETED] },
+					: {
+							$in: [
+								TourScheduleStatus.ACTIVE,
+								TourScheduleStatus.FULL,
+								TourScheduleStatus.PAUSED,
+								TourScheduleStatus.DELETED,
+							],
+						},
 			$expr:
 				modifier > 0
 					? { $lte: [{ $add: ['$reservedSeats', modifier] }, '$availableSeats'] }

@@ -48,7 +48,7 @@ export class PaymentService {
 				tourId: booking.tourId,
 			});
 		} catch (err) {
-			console.log('Error, Service.model:', err.message);
+			console.log('Error, Service.model:', err);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 	}

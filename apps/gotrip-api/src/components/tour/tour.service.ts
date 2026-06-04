@@ -42,7 +42,7 @@ export class TourService {
 			});
 			return result;
 		} catch (err) {
-			console.log('Error, Service.model:', err.message);
+			console.log('Error, Service.model:', err);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 	}
@@ -188,9 +188,7 @@ export class TourService {
 	}
 
 	public async likeTargetTour(memberId: ObjectId, likeRefId: ObjectId): Promise<Tour> {
-		const target: Tour | null = await this.tourModel
-			.findOne({ _id: likeRefId, tourStatus: TourStatus.ACTIVE })
-			.exec();
+		const target: Tour | null = await this.tourModel.findOne({ _id: likeRefId, tourStatus: TourStatus.ACTIVE }).exec();
 		if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
 		const input: LikeInput = {

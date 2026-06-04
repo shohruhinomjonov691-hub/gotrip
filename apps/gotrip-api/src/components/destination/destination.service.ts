@@ -29,7 +29,7 @@ export class DestinationService {
 		try {
 			return await this.destinationModel.create(input);
 		} catch (err) {
-			console.log('Error, Service.model:', err.message);
+			console.log('Error, Service.model:', err);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 	}

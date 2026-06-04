@@ -44,7 +44,7 @@ export class NoticeService {
 				memberId,
 			});
 		} catch (err) {
-			console.log('Error, Service.model:', err.message);
+			console.log('Error, Service.model:', err);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 	}

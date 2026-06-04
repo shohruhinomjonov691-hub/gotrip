@@ -60,7 +60,7 @@ export class BookingService {
 			});
 		} catch (err) {
 			await this.releaseSeatsSafely(input.scheduleId, input.peopleCount);
-			console.log('Error, Service.model:', err.message);
+			console.log('Error, Service.model:', err);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 
@@ -285,9 +285,7 @@ export class BookingService {
 	}
 
 	private async updateBookingStatus(bookingId: ObjectId, bookingStatus: BookingStatus): Promise<Booking> {
-		const result = await this.bookingModel
-			.findByIdAndUpdate(bookingId, { bookingStatus }, { new: true })
-			.exec();
+		const result = await this.bookingModel.findByIdAndUpdate(bookingId, { bookingStatus }, { new: true }).exec();
 		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 
 		return result;
@@ -308,7 +306,7 @@ export class BookingService {
 		try {
 			await this.tourScheduleService.decreaseReservedSeats(scheduleId, peopleCount);
 		} catch (err) {
-			console.log('Warning, failed to release seats after booking failure:', err.message);
+			console.log('Warning, failed to release seats after booking failure:', err);
 		}
 	}
 

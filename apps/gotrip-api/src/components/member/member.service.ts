@@ -29,9 +29,7 @@ export class MemberService {
 	) {}
 
 	public async signup(input: MemberInput): Promise<Member> {
-		const wantsToBecomeAgent = Boolean(
-			input.wantsToBecomeAgent || input.agentRequestMessage || input.agentExperience,
-		);
+		const wantsToBecomeAgent = Boolean(input.wantsToBecomeAgent || input.agentRequestMessage || input.agentExperience);
 		const { wantsToBecomeAgent: _wantsToBecomeAgent, memberType: _memberType, ...signupInput } = input;
 
 		signupInput.memberPassword = await this.authService.hashPassword(input.memberPassword);
@@ -45,7 +43,7 @@ export class MemberService {
 			result.accessToken = await this.authService.createToken(result);
 			return result;
 		} catch (err) {
-			console.log('Error, Service.model:', err.message);
+			console.log('Error, Service.model:', err);
 			throw new BadRequestException(Message.USED_MEMBER_NICK_OR_PHONE);
 		}
 	}

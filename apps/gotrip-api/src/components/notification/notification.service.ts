@@ -5,7 +5,11 @@ import { Booking } from '../../libs/dto/booking/booking';
 import { BoardArticle } from '../../libs/dto/board-article/board-article';
 import { Comment } from '../../libs/dto/comment/comment';
 import { Notification, Notifications } from '../../libs/dto/notification/notification';
-import { AllNotificationsInquiry, NotificationInput, NotificationsInquiry } from '../../libs/dto/notification/notification.input';
+import {
+	AllNotificationsInquiry,
+	NotificationInput,
+	NotificationsInquiry,
+} from '../../libs/dto/notification/notification.input';
 import { Payment } from '../../libs/dto/payment/payment';
 import { Tour } from '../../libs/dto/tour/tour';
 import { Direction, Message } from '../../libs/enums/common.enum';
@@ -37,7 +41,7 @@ export class NotificationService {
 				notificationStatus: NotificationStatus.WAIT,
 			});
 		} catch (err) {
-			console.log('Error, Service.model:', err.message);
+			console.log('Error, Service.model:', err);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 	}
@@ -204,7 +208,7 @@ export class NotificationService {
 			if (input.authorId && String(input.authorId) === String(input.receiverId)) return null;
 			return await this.createNotification(input);
 		} catch (err) {
-			console.log('Warning, notification was not created:', err.message);
+			console.log('Warning, notification was not created:', err);
 			return null;
 		}
 	}
