@@ -20,6 +20,7 @@ import { lookupAuthMemberLiked, lookupMember, shapeIntoMongoObjectId } from '../
 import { LikeService } from '../like/like.service';
 import { LikeInput } from '../../libs/dto/like/like.input';
 import { LikeGroup } from '../../libs/enums/like.enum';
+import { TourScheduleService } from '../tour-schedule/tour-schedule.service';
 
 @Injectable()
 export class TourService {
@@ -28,6 +29,7 @@ export class TourService {
 		private memberService: MemberService,
 		private viewService: ViewService,
 		private likeService: LikeService,
+		private tourScheduleService: TourScheduleService,
 	) {}
 
 	public async createTour(input: TourInput): Promise<Tour> {
@@ -68,6 +70,7 @@ export class TourService {
 		}
 
 		targetTour.memberData = await this.memberService.getMember(null, targetTour.memberId);
+		targetTour.schedules = await this.tourScheduleService.getActiveSchedulesByTour(tourId);
 		return targetTour;
 	}
 
@@ -115,7 +118,7 @@ export class TourService {
 						list: [
 							{ $skip: (input.page - 1) * input.limit },
 							{ $limit: input.limit },
-							lookupAuthMemberLiked(memberId),
+							lookupAuthMemberLiked(memberId, '$_id', LikeGroup.TOUR),
 							lookupMember,
 							{ $unwind: '$memberData' },
 						],
@@ -130,8 +133,10 @@ export class TourService {
 	}
 
 	private shapeMatchQuery(match: T, input: ToursInquiry): void {
-		const { memberId, locationList, categoryList, periodsRange, pricesRange, durationRange, text } = input.search;
+		const { memberId, destinationId, locationList, categoryList, periodsRange, pricesRange, durationRange, text } =
+			input.search;
 		if (memberId) match.memberId = shapeIntoMongoObjectId(memberId);
+		if (destinationId) match.destinationId = shapeIntoMongoObjectId(destinationId);
 		if (locationList && locationList.length) match.tourLocation = { $in: locationList };
 		if (categoryList && categoryList.length) match.tourCategory = { $in: categoryList };
 

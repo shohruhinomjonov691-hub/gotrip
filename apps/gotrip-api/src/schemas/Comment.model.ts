@@ -35,8 +35,20 @@ const CommentSchema = new Schema(
 			min: 1,
 			max: 5,
 		},
+
+		commentLikes: {
+			type: Number,
+			default: 0,
+		},
+
+		parentCommentId: {
+			type: Schema.Types.ObjectId,
+			ref: 'Comment',
+		},
 	},
 	{ timestamps: true, collection: 'comments' },
 );
+
+CommentSchema.index({ commentGroup: 1, commentRefId: 1, parentCommentId: 1 });
 
 export default CommentSchema;

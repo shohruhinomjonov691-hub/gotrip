@@ -12,7 +12,6 @@ const BookingSchema = new Schema(
 		bookingNumber: {
 			type: String,
 			required: true,
-			unique: true,
 		},
 
 		tourId: {
@@ -35,22 +34,44 @@ const BookingSchema = new Schema(
 
 		scheduleId: {
 			type: Schema.Types.ObjectId,
+			required: true,
 			ref: 'TourSchedule',
 		},
 
 		peopleCount: {
 			type: Number,
 			required: true,
+			min: 1,
 		},
 
 		totalPrice: {
 			type: Number,
 			required: true,
+			min: 0,
 		},
 
 		bookingDate: {
 			type: Date,
 			required: true,
+		},
+
+		travelerName: {
+			type: String,
+			required: true,
+		},
+
+		travelerEmail: {
+			type: String,
+			required: true,
+		},
+
+		travelerPhone: {
+			type: String,
+			required: true,
+		},
+
+		passportNumber: {
+			type: String,
 		},
 
 		specialRequest: {
@@ -64,8 +85,20 @@ const BookingSchema = new Schema(
 		cancelledAt: {
 			type: Date,
 		},
+
+		expiresAt: {
+			type: Date,
+			required: true,
+		},
 	},
 	{ timestamps: true, collection: 'bookings' },
 );
+
+BookingSchema.index({ bookingNumber: 1 }, { unique: true });
+BookingSchema.index({ memberId: 1, bookingStatus: 1, bookingDate: -1 });
+BookingSchema.index({ agentId: 1, bookingStatus: 1, bookingDate: -1 });
+BookingSchema.index({ tourId: 1, scheduleId: 1 });
+BookingSchema.index({ bookingStatus: 1, expiresAt: 1 });
+BookingSchema.index({ bookingDate: -1 });
 
 export default BookingSchema;

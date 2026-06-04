@@ -32,6 +32,7 @@ export class TourResolver {
 	): Promise<Tour> {
 		console.log('Mutation: createTour');
 		input.memberId = memberId;
+		if (input.destinationId) input.destinationId = shapeIntoMongoObjectId(input.destinationId);
 		return await this.tourService.createTour(input);
 	}
 
@@ -55,6 +56,7 @@ export class TourResolver {
 	): Promise<Tour> {
 		console.log('Mutation: updateTour');
 		input._id = shapeIntoMongoObjectId(input._id);
+		if (input.destinationId) input.destinationId = shapeIntoMongoObjectId(input.destinationId);
 		return await this.tourService.updateTour(memberId, input);
 	}
 

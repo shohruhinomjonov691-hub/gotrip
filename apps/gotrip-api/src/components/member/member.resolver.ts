@@ -14,7 +14,7 @@ import type { ObjectId } from 'mongoose';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { MemberType } from '../../libs/enums/member.enum';
-import { MemberUpdate } from '../../libs/dto/member/member.update';
+import { AgentRequestReviewInput, MemberUpdate } from '../../libs/dto/member/member.update';
 import { getSerialForImage, shapeIntoMongoObjectId, validMimeTypes } from '../../libs/config';
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
@@ -109,6 +109,14 @@ export class MemberResolver {
 		return await this.memberService.getAllMembersByAdmin(input);
 	}
 
+	@Roles(MemberType.ADMIN)
+	@UseGuards(RolesGuard)
+	@Query(() => Members)
+	public async getAgentRequestsByAdmin(@Args('input') input: MembersInquiry): Promise<Members> {
+		console.log('Query: getAgentRequestsByAdmin');
+		return await this.memberService.getAgentRequestsByAdmin(input);
+	}
+
 	// Authorization: ADMIN
 	@Roles(MemberType.ADMIN)
 	@UseGuards(RolesGuard)
@@ -116,6 +124,15 @@ export class MemberResolver {
 	public async updateMemberByAdmin(@Args('input') input: MemberUpdate): Promise<Member> {
 		console.log('Mutation: updateMemberByAdmin');
 		return await this.memberService.updateMemberByAdmin(input);
+	}
+
+	@Roles(MemberType.ADMIN)
+	@UseGuards(RolesGuard)
+	@Mutation(() => Member)
+	public async reviewAgentRequestByAdmin(@Args('input') input: AgentRequestReviewInput): Promise<Member> {
+		console.log('Mutation: reviewAgentRequestByAdmin');
+		input.memberId = shapeIntoMongoObjectId(input.memberId);
+		return await this.memberService.reviewAgentRequestByAdmin(input);
 	}
 
 	/** UPLOADER **/

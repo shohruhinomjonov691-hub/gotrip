@@ -18,6 +18,7 @@ const PaymentSchema = new Schema(
 		paymentAmount: {
 			type: Number,
 			required: true,
+			min: 0,
 		},
 
 		bookingId: {
@@ -52,5 +53,11 @@ const PaymentSchema = new Schema(
 	},
 	{ timestamps: true, collection: 'payments' },
 );
+
+PaymentSchema.index({ bookingId: 1, paymentStatus: 1 });
+PaymentSchema.index({ memberId: 1, paymentStatus: 1, createdAt: -1 });
+PaymentSchema.index({ tourId: 1, paymentStatus: 1, createdAt: -1 });
+PaymentSchema.index({ paymentStatus: 1, paymentMethod: 1, createdAt: -1 });
+PaymentSchema.index({ transactionId: 1 });
 
 export default PaymentSchema;

@@ -42,6 +42,28 @@ const DestinationSchema = new Schema(
 			default: 0,
 		},
 
+		destinationLikes: {
+			type: Number,
+			default: 0,
+		},
+
+		destinationComments: {
+			type: Number,
+			default: 0,
+		},
+
+		destinationRating: {
+			type: Number,
+			default: 0,
+			min: 0,
+			max: 5,
+		},
+
+		destinationTours: {
+			type: Number,
+			default: 0,
+		},
+
 		destinationRank: {
 			type: Number,
 			default: 0,
@@ -49,5 +71,7 @@ const DestinationSchema = new Schema(
 	},
 	{ timestamps: true, collection: 'destinations' },
 );
+
+DestinationSchema.index({ destinationStatus: 1, destinationCountry: 1, destinationCity: 1 });
 
 export default DestinationSchema;

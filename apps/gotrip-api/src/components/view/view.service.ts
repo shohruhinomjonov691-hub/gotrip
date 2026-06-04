@@ -23,8 +23,8 @@ export class ViewService {
 	}
 
 	private async checkViewExixtence(input: ViewInput): Promise<View | null> {
-		const { memberId, viewRefId } = input;
-		const search: T = { memberId: memberId, viewRefId: viewRefId };
+		const { memberId, viewGroup, viewRefId } = input;
+		const search: T = { viewGroup: viewGroup, viewRefId: viewRefId, memberId: memberId };
 		return await this.viewModel.findOne(search).exec();
 	}
 

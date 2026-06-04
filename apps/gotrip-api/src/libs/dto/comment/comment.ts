@@ -26,6 +26,12 @@ export class Comment {
 	@Field(() => Int, { nullable: true })
 	rating?: number;
 
+	@Field(() => Int, { nullable: true })
+	commentLikes?: number;
+
+	@Field(() => String, { nullable: true })
+	parentCommentId?: mongoose.ObjectId;
+
 	@Field(() => Date)
 	createdAt: Date;
 

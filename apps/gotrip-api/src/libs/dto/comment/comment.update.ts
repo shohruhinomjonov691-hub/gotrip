@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
+import { IsNotEmpty, IsOptional, Length, Max, Min } from 'class-validator';
 import { CommentStatus } from '../../enums/comment.enum';
 import * as mongoose from 'mongoose';
 
@@ -20,6 +20,7 @@ export class CommentUpdate {
 
 	@IsOptional()
 	@Min(1)
+	@Max(5)
 	@Field(() => Int, { nullable: true })
 	rating?: number;
 }

@@ -1,10 +1,34 @@
 import { ObjectId } from 'bson';
+import { LikeGroup } from './enums/like.enum';
 
 export const availableAgentSorts = ['createdAt', 'updatedAt', 'memberTours', 'memberLikes', 'memberViews', 'memberRank'];
 export const availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews'];
 export const availableTourSorts = ['createdAt', 'updatedAt', 'tourLikes', 'tourViews', 'tourRank', 'tourPrice'];
 export const availableBoardArticleSorts = ['createdAt', 'updatedAt', 'articleLikes', 'articleViews'];
 export const availableCommentSorts = ['createdAt', 'updatedAt'];
+export const availableDestinationSorts = [
+	'createdAt',
+	'updatedAt',
+	'destinationViews',
+	'destinationLikes',
+	'destinationRank',
+	'destinationRating',
+	'destinationTours',
+];
+export const availableTourScheduleSorts = [
+	'createdAt',
+	'updatedAt',
+	'startDate',
+	'endDate',
+	'availableSeats',
+	'reservedSeats',
+	'price',
+];
+export const availableBookingSorts = ['createdAt', 'updatedAt', 'bookingDate', 'totalPrice', 'peopleCount'];
+export const availablePaymentSorts = ['createdAt', 'updatedAt', 'paymentAmount', 'paidAt', 'refundedAt'];
+export const availableWishlistSorts = ['createdAt', 'updatedAt'];
+export const availableNotificationSorts = ['createdAt', 'updatedAt'];
+export const availableNoticeSorts = ['createdAt', 'updatedAt'];
 
 /** IMAGE CONFIGURATION **/
 import { v4 as uuidv4 } from 'uuid';
@@ -21,11 +45,16 @@ export const shapeIntoMongoObjectId = (target: any) => {
 	return typeof target === 'string' ? new ObjectId(target) : target;
 };
 
-export const lookupAuthMemberLiked = (memberId: T, targetRefId: string = '$_id') => {
+export const lookupAuthMemberLiked = (
+	memberId: T,
+	targetRefId: string = '$_id',
+	likeGroup: LikeGroup = LikeGroup.MEMBER,
+) => {
 	return {
 		$lookup: {
 			from: 'likes',
 			let: {
+				localLikeGroup: likeGroup,
 				localLikeRefId: targetRefId,
 				localMemberId: memberId,
 				localMyFavorite: true,
@@ -34,7 +63,11 @@ export const lookupAuthMemberLiked = (memberId: T, targetRefId: string = '$_id')
 				{
 					$match: {
 						$expr: {
-							$and: [{ $eq: ['$likeRefId', '$$localLikeRefId'] }, { $eq: ['$memberId', '$$localMemberId'] }],
+							$and: [
+								{ $eq: ['$likeGroup', '$$localLikeGroup'] },
+								{ $eq: ['$likeRefId', '$$localLikeRefId'] },
+								{ $eq: ['$memberId', '$$localMemberId'] },
+							],
 						},
 					},
 				},

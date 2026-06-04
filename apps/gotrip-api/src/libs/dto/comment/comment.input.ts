@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsIn, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, Length, Max, Min } from 'class-validator';
 import * as mongoose from 'mongoose';
 import { CommentGroup } from '../../enums/comment.enum';
 import { Direction } from '../../enums/common.enum';
@@ -22,8 +22,13 @@ export class CommentInput {
 
 	@IsOptional()
 	@Min(1)
+	@Max(5)
 	@Field(() => Int, { nullable: true })
 	rating?: number;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	parentCommentId?: mongoose.ObjectId;
 
 	memberId?: mongoose.ObjectId;
 }
@@ -31,8 +36,16 @@ export class CommentInput {
 @InputType()
 class CISearch {
 	@IsNotEmpty()
+	@Field(() => CommentGroup)
+	commentGroup: CommentGroup;
+
+	@IsNotEmpty()
 	@Field(() => String)
 	commentRefId: mongoose.ObjectId;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	parentCommentId?: mongoose.ObjectId;
 }
 
 @InputType()

@@ -12,9 +12,9 @@ The backend has moved from the staged GoTrip identity rename into a breaking tra
 | Ownership role | `MemberType.AGENT` remains the tour creator/operator role |
 | Member role enum | `USER`, `AGENT`, `ADMIN` unchanged |
 | Main collection | `tours` |
-| New ERD collections | `destinations`, `tourSchedules`, `bookings`, `wishlists`, `payments` |
+| New ERD collections | `destinations`, `tourSchedules`, `bookings`, `payments`, `wishlists`, `notifications`, and `notices` |
 | Shared social modules | Likes, views, comments, and notifications use `TOUR` group naming |
-| Batch ranking | Calculates `tourRank` and agent rank from `memberTours` |
+| Batch ranking | Calculates tour, agent, and destination ranks from engagement, bookings, wishlists, and destination tour counts |
 
 ## GraphQL Changes
 

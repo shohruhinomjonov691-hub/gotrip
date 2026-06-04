@@ -8,6 +8,9 @@ import { MemberModule } from '../member/member.module';
 import CommentSchema from '../../schemas/Comment.model';
 import { TourModule } from '../tour/tour.module';
 import { BoardArticleModule } from '../board-article/board-article.module';
+import { LikeModule } from '../like/like.module';
+import { DestinationModule } from '../destination/destination.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
 	imports: [
@@ -21,6 +24,9 @@ import { BoardArticleModule } from '../board-article/board-article.module';
 		MemberModule,
 		TourModule,
 		BoardArticleModule,
+		LikeModule,
+		DestinationModule,
+		NotificationModule,
 	],
 	providers: [CommentResolver, CommentService],
 })

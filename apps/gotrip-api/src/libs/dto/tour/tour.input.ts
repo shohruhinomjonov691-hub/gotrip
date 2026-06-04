@@ -114,6 +114,10 @@ class PISearch {
 	memberId?: mongoose.ObjectId;
 
 	@IsOptional()
+	@Field(() => String, { nullable: true })
+	destinationId?: mongoose.ObjectId;
+
+	@IsOptional()
 	@Field(() => [TourLocation], { nullable: true })
 	locationList?: TourLocation[];
 

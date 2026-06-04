@@ -12,6 +12,8 @@ import { TourScheduleModule } from './tour-schedule/tour-schedule.module';
 import { BookingModule } from './booking/booking.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { PaymentModule } from './payment/payment.module';
+import { NotificationModule } from './notification/notification.module';
+import { NoticeModule } from './notice/notice.module';
 
 @Module({
 	imports: [
@@ -28,6 +30,8 @@ import { PaymentModule } from './payment/payment.module';
 		BookingModule,
 		WishlistModule,
 		PaymentModule,
+		NotificationModule,
+		NoticeModule,
 	],
 })
 export class ComponentsModule {}

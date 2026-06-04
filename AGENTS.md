@@ -9,7 +9,7 @@ Before changing code, read the current AI handoff docs:
 
 - `docs/ai/BACKEND_MIGRATION.md`
 - `docs/ai/DECISIONS.md`
-- `docs/ai/COMPLETED_TASK.md`
+- `docs/ai/COMPLETED_TASKS.md`
 - `docs/ai/NEXT_STEPS.md`
 
 Use those files as the source of truth for AI Agent related migration history, accepted decisions, remaining work and validation status.

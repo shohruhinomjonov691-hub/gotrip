@@ -78,8 +78,9 @@ registerEnumType(DestinationStatus, {
 
 export enum TourScheduleStatus {
 	ACTIVE = 'ACTIVE',
-	SOLD_OUT = 'SOLD_OUT',
-	CANCELLED = 'CANCELLED',
+	FULL = 'FULL',
+	PAUSED = 'PAUSED',
+	DELETED = 'DELETED',
 }
 registerEnumType(TourScheduleStatus, {
 	name: 'TourScheduleStatus',
@@ -87,6 +88,7 @@ registerEnumType(TourScheduleStatus, {
 
 export enum WishlistGroup {
 	TOUR = 'TOUR',
+	DESTINATION = 'DESTINATION',
 }
 registerEnumType(WishlistGroup, {
 	name: 'WishlistGroup',
@@ -97,6 +99,7 @@ export enum PaymentStatus {
 	PAID = 'PAID',
 	FAILED = 'FAILED',
 	REFUNDED = 'REFUNDED',
+	CANCELLED = 'CANCELLED',
 }
 registerEnumType(PaymentStatus, {
 	name: 'PaymentStatus',
@@ -104,8 +107,10 @@ registerEnumType(PaymentStatus, {
 
 export enum PaymentMethod {
 	CARD = 'CARD',
-	CASH = 'CASH',
 	BANK_TRANSFER = 'BANK_TRANSFER',
+	KAKAO_PAY = 'KAKAO_PAY',
+	NAVER_PAY = 'NAVER_PAY',
+	CASH = 'CASH',
 }
 registerEnumType(PaymentMethod, {
 	name: 'PaymentMethod',

@@ -1,6 +1,6 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
 import * as mongoose from 'mongoose';
-import { MemberAuthType, MemberStatus, MemberType } from '../../enums/member.enum';
+import { AgentRequestStatus, MemberAuthType, MemberStatus, MemberType } from '../../enums/member.enum';
 import { MeLiked } from '../like/like';
 import { MeFollowed } from '../follow/follow';
 
@@ -70,6 +70,24 @@ export class Member {
 
 	@Field(() => Int)
 	memberBlocks: number;
+
+	@Field(() => AgentRequestStatus, { nullable: true })
+	agentRequestStatus?: AgentRequestStatus;
+
+	@Field(() => String, { nullable: true })
+	agentRequestMessage?: string;
+
+	@Field(() => String, { nullable: true })
+	agentExperience?: string;
+
+	@Field(() => Date, { nullable: true })
+	agentApprovedAt?: Date;
+
+	@Field(() => Date, { nullable: true })
+	agentRejectedAt?: Date;
+
+	@Field(() => Boolean, { nullable: true })
+	isVerifiedAgent?: boolean;
 
 	@Field(() => Date, { nullable: true })
 	deletedAt?: Date;

@@ -32,11 +32,16 @@ const NotificationSchema = new Schema(
 
 		authorId: {
 			type: Schema.Types.ObjectId,
-			required: true,
 			ref: 'Member',
 		},
 
 		receiverId: {
+			type: Schema.Types.ObjectId,
+			required: true,
+			ref: 'Member',
+		},
+
+		memberId: {
 			type: Schema.Types.ObjectId,
 			required: true,
 			ref: 'Member',
@@ -56,8 +61,24 @@ const NotificationSchema = new Schema(
 			type: Schema.Types.ObjectId,
 			ref: 'BoardArticle',
 		},
+
+		paymentId: {
+			type: Schema.Types.ObjectId,
+			ref: 'Payment',
+		},
+
+		commentId: {
+			type: Schema.Types.ObjectId,
+			ref: 'Comment',
+		},
 	},
 	{ timestamps: true, collection: 'notifications' },
 );
+
+NotificationSchema.index({ receiverId: 1, notificationStatus: 1, createdAt: -1 });
+NotificationSchema.index({ memberId: 1, notificationStatus: 1, createdAt: -1 });
+NotificationSchema.index({ notificationType: 1 });
+NotificationSchema.index({ notificationGroup: 1 });
+NotificationSchema.index({ tourId: 1, bookingId: 1, paymentId: 1, articleId: 1, commentId: 1 });
 
 export default NotificationSchema;

@@ -2,9 +2,9 @@
 
 ## Goal
 
-Migrate the Next.js frontend from a real-estate Nestar experience to a GoTrip travel booking experience while the backend GraphQL API remains property-based for compatibility.
+Migrate the Next.js frontend from the old real-estate Nestar experience to the current GoTrip travel booking experience. The backend now exposes tour-based GoTrip GraphQL APIs.
 
-The frontend should hide legacy real-estate terms from users before the backend domain model is renamed.
+The frontend should consume the current tour, destination, schedule, booking, payment, wishlist, notification, notice, and article APIs directly.
 
 ## Step-By-Step Plan
 
@@ -12,80 +12,69 @@ The frontend should hide legacy real-estate terms from users before the backend 
 | --- | --- | --- |
 | 1 | Inventory current Next.js routes, layouts, GraphQL operations, generated types, and shared components. | Route/component map with Nestar terminology. |
 | 2 | Rename brand-level UI from Nestar to GoTrip. | Header, footer, metadata, auth screens, error pages, and dashboard labels use GoTrip. |
-| 3 | Add frontend terminology adapters. | UI uses tour/travel names while GraphQL still calls property/member/agent fields. |
+| 3 | Update frontend GraphQL documents. | UI uses current tour/travel GraphQL operations and fields. |
 | 4 | Migrate listing pages. | Property listing UI becomes tour listing UI. |
 | 5 | Migrate detail pages. | Property detail UI becomes tour detail UI. |
 | 6 | Migrate profile and marketplace language. | Agent profiles become guide/operator profiles in UI. |
 | 7 | Migrate saved and activity views. | Favorites/visited properties become saved/visited tours. |
 | 8 | Migrate community pages. | Board articles become travel community/articles. |
 | 9 | Update tests and visual snapshots. | Existing flows pass with GoTrip terminology. |
-| 10 | Prepare for future backend GraphQL rename. | Frontend code isolates legacy GraphQL names behind adapters/hooks. |
+| 10 | Complete current backend integration. | Frontend code uses current GoTrip GraphQL documents and generated types. |
 
 ## Page And Component Mapping
 
-| Old Nestar Frontend Area | GoTrip Frontend Area | Backend API During Compatibility Phase |
+| Old Nestar Frontend Area | GoTrip Frontend Area | Current Backend API |
 | --- | --- | --- |
-| Property listing page | Tour listing page | `getProperties` |
-| Property detail page | Tour detail page | `getProperty` |
-| Create property page/form | Create tour page/form for operators | `createProperty` |
-| Update property page/form | Update tour page/form for operators | `updateProperty` |
+| Property listing page | Tour listing page | `getTours` |
+| Property detail page | Tour detail page | `getTour` |
+| Create property page/form | Create tour page/form for operators | `createTour` |
+| Update property page/form | Update tour page/form for operators | `updateTour` |
 | Agent listing/profile | Guide/operator listing/profile | `getAgents`, `getMember` |
-| Favorite properties | Saved tours | `getFavorites` |
+| Favorite properties | Saved tours | `toggleWishlist`, `getMyWishlist`, `checkWishlist` |
 | Visited properties | Recently viewed tours | `getVisited` |
 | Board articles | Travel community/articles | `getBoardArticles`, `getBoardArticle` |
+| Notices | Notices/help content | `getNotices`, `getNotice` |
 | Member profile | Traveler account/profile | `getMember`, `updateMember` |
 | Member signup/login | Traveler signup/login | `signup`, `login` |
 
 ## GraphQL Query And Mutation Rename Plan
 
-### Phase 1: Compatibility Consumption
+### Phase 1: Current GoTrip API Consumption
 
-Use existing backend operations unchanged. Rename only frontend functions, hooks, files, and UI labels.
+Use current backend operations directly.
 
-| Frontend Name | Existing GraphQL Operation |
+| Frontend Name | Current GraphQL Operation |
 | --- | --- |
-| `useTours` | `getProperties` |
-| `useTour` | `getProperty` |
-| `createTour` | `createProperty` |
-| `updateTour` | `updateProperty` |
-| `saveTour` | `likeTargetProperty` |
-| `useSavedTours` | `getFavorites` |
+| `useTours` | `getTours` |
+| `useTour` | `getTour` |
+| `createTour` | `createTour` |
+| `updateTour` | `updateTour` |
+| `saveTour` | `toggleWishlist` / `checkWishlist` |
+| `useSavedTours` | `getMyWishlist` |
 | `useVisitedTours` | `getVisited` |
 | `useGuides` | `getAgents` |
+| `useNotices` | `getNotices` |
 
-### Phase 2: Frontend Adapter Layer
+### Phase 2: Frontend Data Layer
 
-Create a frontend data mapping layer that converts backend fields to UI concepts.
+Create a frontend data layer around current GoTrip fields and UI concepts.
 
 | Backend Field | Frontend Adapter Field |
 | --- | --- |
-| `propertyTitle` | `tourTitle` |
-| `propertyDesc` | `tourDescription` |
-| `propertyPrice` | `tourPrice` |
-| `propertyLocation` | `tourLocation` |
-| `propertyImages` | `tourImages` |
-| `propertyViews` | `tourViews` |
-| `propertyLikes` | `tourLikes` |
-| `propertyComments` | `tourComments` |
+| `tourTitle` | `tourTitle` |
+| `tourDesc` | `tourDescription` |
+| `tourPrice` | `tourPrice` |
+| `tourLocation` | `tourLocation` |
+| `tourImages` | `tourImages` |
+| `tourViews` | `tourViews` |
+| `tourLikes` | `tourLikes` |
+| `tourComments` | `tourComments` |
 | `memberData` | `operatorData` or `guideData` |
 | `MemberType.AGENT` | guide/operator role in UI only |
 
-### Phase 3: Backend Rename Preparation
+### Phase 3: Remaining Integration Areas
 
-Only after compatibility policy is chosen, plan backend GraphQL renames such as:
-
-| Existing API Name | Future API Name |
-| --- | --- |
-| `Property` | `Tour` |
-| `Properties` | `Tours` |
-| `PropertyInput` | `TourInput` |
-| `PropertiesInquiry` | `ToursInquiry` |
-| `getProperty` | `getTour` |
-| `getProperties` | `getTours` |
-| `createProperty` | `createTour` |
-| `updateProperty` | `updateTour` |
-| `likeTargetProperty` | `likeTargetTour` |
-| `getAgentProperties` | `getGuideTours` or `getOperatorTours` |
+Connect destination, schedule, booking, payment, wishlist, notification, notice, and admin approval screens to the current backend operations.
 
 ## UI Terminology Changes
 
@@ -106,8 +95,6 @@ Only after compatibility policy is chosen, plan backend GraphQL renames such as:
 
 ## Frontend Compatibility Notes
 
-- Do not rename backend GraphQL documents until the backend exposes compatible GoTrip operations.
-- Prefer adapter functions over scattering `property*` field references across UI components.
-- Keep generated GraphQL types stable during phase 1.
-- Add tests for key user flows before making backend GraphQL changes.
-
+- Backend GraphQL now exposes GoTrip operations; update frontend documents and generated types to match.
+- Prefer adapter functions over scattering raw backend field access across UI components.
+- Add tests for key user flows before broad UI rewrites.
