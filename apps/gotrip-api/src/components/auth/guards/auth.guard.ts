@@ -1,16 +1,17 @@
 import { BadRequestException, CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { GqlContextType, GqlExecutionContext } from '@nestjs/graphql';
 import { AuthService } from '../auth.service';
-import { Message } from 'apps/gotrip-api/src/libs/enums/common.enum';
+import { Message } from '../../../libs/enums/common.enum';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
 	constructor(private authService: AuthService) {}
 
-	async canActivate(context: ExecutionContext | any): Promise<boolean> {
+	async canActivate(context: ExecutionContext): Promise<boolean> {
 		console.info('--- @guard() Authentication [AuthGuard] ---');
 
-		if (context.contextType === 'graphql') {
-			const request = context.getArgByIndex(2).req;
+		if (context.getType<GqlContextType>() === 'graphql') {
+			const request = GqlExecutionContext.create(context).getContext().req;
 
 			const bearerToken = request.headers.authorization;
 			if (!bearerToken) throw new BadRequestException(Message.TOKEN_NOT_EXIST);
@@ -20,6 +21,7 @@ export class AuthGuard implements CanActivate {
 			if (!authMember) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
 
 			console.log('memberNick[auth] =>', authMember.memberNick);
+			request.body = request.body ?? {};
 			request.body.authMember = authMember;
 
 			return true;

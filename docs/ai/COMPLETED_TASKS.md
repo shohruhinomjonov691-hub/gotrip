@@ -152,6 +152,16 @@ Completed the breaking backend migration from the old real-estate `Property` cat
 | Docs cleanup | Updated stale frontend/backend migration notes so they reference current tour-based GraphQL APIs |
 | Validation results | API and batch TypeScript validations passed |
 
+## Latest Phase: createTour Authorization Fix
+
+| Area | Completed Change |
+| --- | --- |
+| Affected modules | Tightened GraphQL auth guards/decorator and `tour` resolver/service create flow |
+| Authorization | `RolesGuard` now uses `GqlExecutionContext`/`context.getType()` and enforces `@Roles(MemberType.AGENT)` for GraphQL requests |
+| Service safety | `TourService.createTour` reloads the current member, rejects non-`AGENT` members with `Message.ONLY_SPECIFIC_ROLES_ALLOWED`, and sets ownership from the authenticated member id |
+| Tests | Added focused `createTour` service tests and `RolesGuard` role tests for `USER`, `ADMIN`, and `AGENT` behavior |
+| Validation results | API TypeScript validation and focused Jest specs passed |
+
 ## Validation Status
 
 | Check | Command | Status |
@@ -160,6 +170,7 @@ Completed the breaking backend migration from the old real-estate `Property` cat
 | Batch typecheck | `npx tsc -p apps/gotrip-batch/tsconfig.app.json --noEmit` | Passed |
 | Full build | `npm run build` | Passed |
 | Default Jest suite | `npm test -- --runInBand` | No tests found by current Jest regex |
+| Focused auth/tour specs | `npx jest apps/gotrip-api/src/components/tour/tour.service.spec.ts apps/gotrip-api/src/components/auth/guards/roles.guard.spec.ts --runInBand` | Passed |
 | API e2e smoke | `npm run test:e2e` | Blocked by MongoDB SRV DNS/network `ECONNREFUSED` |
 
 ## Remaining Work

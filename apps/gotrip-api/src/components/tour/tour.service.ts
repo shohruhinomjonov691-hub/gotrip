@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
 import { Tours, Tour } from '../../libs/dto/tour/tour';
@@ -21,6 +21,7 @@ import { LikeService } from '../like/like.service';
 import { LikeInput } from '../../libs/dto/like/like.input';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { TourScheduleService } from '../tour-schedule/tour-schedule.service';
+import { MemberType } from '../../libs/enums/member.enum';
 
 @Injectable()
 export class TourService {
@@ -32,7 +33,14 @@ export class TourService {
 		private tourScheduleService: TourScheduleService,
 	) {}
 
-	public async createTour(input: TourInput): Promise<Tour> {
+	public async createTour(memberId: ObjectId, input: TourInput): Promise<Tour> {
+		const authMember = await this.memberService.getMember(null, memberId);
+		if (authMember.memberType !== MemberType.AGENT) {
+			throw new ForbiddenException(Message.ONLY_SPECIFIC_ROLES_ALLOWED);
+		}
+
+		input.memberId = memberId;
+
 		try {
 			const result = await this.tourModel.create(input);
 			await this.memberService.memberStatsEditor({
