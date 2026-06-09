@@ -77,8 +77,11 @@ Next frontend migration work:
 - Connect notification bell to `getMyNotifications`, read/delete mutations, and unread state.
 - Add admin Destination Management and connect admin Notice Management to Notice CRUD mutations.
 - Add admin Booking/Payment/Notification dashboards using existing backend operations.
-- Continue replacing visible legacy Nestar/property copy in older inactive components before deleting property scaffolding.
+- Continue replacing inactive legacy property copy in older inactive components before deleting property scaffolding.
 - Only remove legacy property files after all imports are migrated and both `yarn tsc --noEmit` and `yarn build` pass.
+
+Completed frontend follow-up:
+- Visible Nestar branding/logo cleanup in active GoTrip frontend surfaces.
 
 Validation required after each phase:
 - `yarn tsc --noEmit`

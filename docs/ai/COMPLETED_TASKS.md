@@ -207,3 +207,37 @@ Validation:
 Notes:
 - Legacy property files were not removed. They remain until all imports are migrated and the removal pass can be validated separately.
 - Booking, payment, and notification GraphQL documents/types are present for staged UI integration, but full booking/payment/notification UX is deferred.
+
+## 2026-06-09 - Frontend Branding Refresh
+
+Completed a visible GoTrip branding cleanup in `GoTrip-next` without changing Apollo documents, GraphQL operations, route compatibility wrappers, or backend integration.
+
+Implemented:
+- Replaced the existing Nestar SVG logo assets at the current logo paths with GoTrip travel-mark SVGs.
+- Updated active layout metadata, document SEO text, footer branding, community branding, and visible mobile placeholders from Nestar/property language to GoTrip travel-tour language.
+- Updated user-facing locale labels so active translated navigation and search copy refer to tours, guides, destinations, and travelers.
+- Updated visible guide/operator labels while preserving backend `MemberType.AGENT` and existing GraphQL operation names.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `yarn build` passed.
+
+## 2026-06-09 - Frontend Homepage Premium Travel UX Refresh
+
+Completed a premium GoTrip homepage UX pass in GoTrip-next while preserving the existing Next.js Pages Router, Apollo/GraphQL documents, backend integration, route structure, compatibility routes, and booking/payment business logic.
+
+Implemented:
+- Added framer-motion for homepage entrance animations, scroll reveals, card hover lift, and tap micro-interactions.
+- Redesigned the homepage hero with travel-focused copy, primary tour/guide CTAs, compact trip stats, and a responsive search-first mobile hero.
+- Upgraded the tour search panel with restrained glassmorphism, keyword/category/location/destination filters, Enter-to-search support, and the existing tour query-param navigation behavior.
+- Added a destination discovery strip using existing getDestinations data and links to filtered tour results.
+- Refined the header navigation with a sticky glass treatment, active route states, improved login/profile affordances, notification styling, and cleaned scroll listener lifecycle.
+- Upgraded featured tour sections and tour cards with premium image treatment, travel metadata, clearer wishlist/like controls, and stronger Check availability CTAs.
+- Scoped TypeScript validation away from local agent skill example folders by excluding skills and .agents from the frontend tsconfig source set.
+
+Validation:
+- yarn tsc --noEmit passed.
+- yarn build passed.
+
+Notes:
+- GraphQL documents, Apollo integration, backend URLs, route names, MemberType roles, compatibility routes, booking logic, and payment logic were not changed.

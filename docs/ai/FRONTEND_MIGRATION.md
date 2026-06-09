@@ -113,3 +113,20 @@ Compatibility state:
 Validation status:
 - `yarn tsc --noEmit`: passed.
 - `yarn build`: passed.
+
+## 2026-06-09 - Frontend Branding Refresh
+
+Visible Nestar branding has been replaced with GoTrip branding across the active frontend shell and shared visible surfaces. The existing logo asset paths were preserved while the SVG contents were replaced with a GoTrip travel-mark logo system, so current component references continue to work.
+
+Updated surfaces:
+- Layout title/meta and document SEO copy now use GoTrip travel-tour language.
+- Header/footer/admin/auth/community logo references now render the GoTrip logo through existing asset paths.
+- Footer, community labels, guide/operator labels, mobile placeholders, and locale labels no longer expose visible Nestar branding.
+
+Compatibility state:
+- No Apollo documents, GraphQL operations, backend roles, or route compatibility wrappers were changed.
+- `MemberType.AGENT` remains the backend role while guide/operator wording is UI-only.
+
+Validation status:
+- `yarn tsc --noEmit`: passed.
+- `yarn build`: passed.
