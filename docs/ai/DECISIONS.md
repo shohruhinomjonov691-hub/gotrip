@@ -9,7 +9,7 @@
 | Use `tourCategory` over ERD `tourType` | The user provided the exact category enum values and field name. | ERD labels and code use slightly different naming. | Keep `tourType`, which would conflict with user terminology. |
 | Replace `properties` collection with `tours` | The ERD defines `tours` as the primary catalog collection. | Existing documents require migration before the new API can serve them. | Alias old `properties`, rejected for the breaking migration. |
 | Add ERD collection schemas now | The backend should reflect destinations, schedules, bookings, wishlists, and payments. | Initial modules are schema/DI foundations, not full business workflows yet. | Delay new collections until booking API work. |
-| Keep saved tours on likes for now | Existing favorites logic is implemented through the like module and remained reusable. | `wishlists` exists but is not yet the active saved-tour API. | Replace favorites with wishlist behavior in the same pass. |
+| Use Wishlist for saved tours | Saved-tour UX must use `toggleWishlist`, `getMyWishlist`, and `checkWishlist` while likes remain social/ranking engagement. | Existing legacy favorites components may still exist until the removal pass. | Continue using likes for saved tours, rejected for GoTrip frontend migration. |
 
 ## Compatibility Principles
 
@@ -26,5 +26,14 @@
 | --- | --- | --- |
 | Existing data still lives in `properties` | New tour APIs will not return old catalog documents. | Run a controlled `properties` -> `tours` data migration with curated defaults. |
 | Frontend still uses old GraphQL documents | App calls will fail after backend deployment. | Update frontend queries/mutations to `getTours`, `getTour`, `createTour`, etc. |
-| Booking modules are foundational only | Booking lifecycle is not fully user-operable yet. | Add booking/schedule/payment resolvers and tests next. |
+| Booking/payment UI remains staged | Backend booking/payment modules exist, but full frontend user workflows are not complete yet. | Add tour detail booking creation, My Bookings, My Payments, and admin payment dashboards in later frontend phases. |
 | Lint dependency issue may remain | ESLint may still fail before source analysis. | Fix `typescript-eslint` package/config separately before relying on lint. |
+
+## 2026-06-09 - Frontend Compatibility Decisions
+
+- Keep `/property` and `/property/detail` as temporary compatibility entrypoints that redirect to `/tour` and `/tour/detail` during the first migration wave.
+- Keep `_admin/properties` as a temporary compatibility URL, but use it for Tour Management data and UI.
+- Use backend `MemberType.AGENT` unchanged while labeling the role as Guide/Operator in frontend copy.
+- Use signup-time fields `wantsToBecomeAgent`, `agentRequestMessage`, and `agentExperience` for initial Guide/Operator requests until a separate verified self-service request mutation exists.
+- Use Wishlist for saved tours and reserve Likes for social engagement/ranking.
+- Preserve legacy property files until all imports are migrated and TypeScript/build validation passes.

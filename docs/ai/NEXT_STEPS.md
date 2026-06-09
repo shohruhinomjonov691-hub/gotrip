@@ -66,3 +66,20 @@
 | P1 | Add notice tests | Cover active public reads, admin create/update/delete, and soft-delete filtering |
 | P1 | Add ranking batch tests | Cover tour/member/destination formulas, destination tour counts, successful booking counts, and wishlist counts |
 | P1 | Add tour resolver/service tests | Cover create, update, list, detail, like, visited, comments |
+
+## 2026-06-09 - Frontend Next Steps
+
+Next frontend migration work:
+- Replace remaining inactive legacy property components and imports after confirming no active route depends on them.
+- Implement full tour image upload flow using `imagesUploader` target `tour`.
+- Expand tour create/update UI to include itinerary, included/excluded items, language, difficulty, destination assignment, and schedule management.
+- Add booking creation on tour detail from selected `scheduleId`, then connect My Bookings and My Payments screens.
+- Connect notification bell to `getMyNotifications`, read/delete mutations, and unread state.
+- Add admin Destination Management and connect admin Notice Management to Notice CRUD mutations.
+- Add admin Booking/Payment/Notification dashboards using existing backend operations.
+- Continue replacing visible legacy Nestar/property copy in older inactive components before deleting property scaffolding.
+- Only remove legacy property files after all imports are migrated and both `yarn tsc --noEmit` and `yarn build` pass.
+
+Validation required after each phase:
+- `yarn tsc --noEmit`
+- `yarn build`

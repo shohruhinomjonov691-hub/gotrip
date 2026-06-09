@@ -98,3 +98,18 @@ Connect destination, schedule, booking, payment, wishlist, notification, notice,
 - Backend GraphQL now exposes GoTrip operations; update frontend documents and generated types to match.
 - Prefer adapter functions over scattering raw backend field access across UI components.
 - Add tests for key user flows before broad UI rewrites.
+
+## 2026-06-09 - Frontend Migration Progress
+
+A first implementation pass has migrated active frontend surfaces from Nestar/property concepts toward GoTrip tour concepts. The frontend now has primary `/tour` and `/tour/detail` public routes, tour-based homepage discovery, Wishlist-backed saved tours, guide/operator request intake during signup, mypage request status display, admin tour management, admin guide/operator request review, destination-backed home search, and public notice API integration.
+
+GraphQL additions include public/admin documents for tours, destinations, tour schedules, bookings, payments, wishlists, notifications, notices, and agent approval. Community BoardArticle functionality was preserved, with article comments explicitly using `CommentGroup.ARTICLE` and tour reviews using `CommentGroup.TOUR`.
+
+Compatibility state:
+- `/property` and `/property/detail` still exist as compatibility wrappers and redirect into tour routes.
+- `_admin/properties` remains the admin compatibility URL, but its screen now manages tours.
+- Legacy property component/type files remain in the repository and must not be removed until all imports are migrated and validation passes.
+
+Validation status:
+- `yarn tsc --noEmit`: passed.
+- `yarn build`: passed.

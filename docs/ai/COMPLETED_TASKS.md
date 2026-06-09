@@ -181,3 +181,29 @@ Completed the breaking backend migration from the old real-estate `Property` cat
 | Frontend | Update GraphQL documents and UI adapters to call current GoTrip operations directly |
 | Booking API | Add future batch-expiry workflow |
 | Tests | Add behavior tests around tour CRUD, saved/visited tours, comments/ratings, bookings, payments, wishlists, notifications, notices, and batch ranking |
+
+## 2026-06-09 - Frontend Tour Migration Pass
+
+Completed an incremental GoTrip frontend migration pass in `GoTrip-next` while preserving the existing Next.js/Apollo architecture and keeping legacy property files as compatibility scaffolding.
+
+Implemented:
+- Added GoTrip tour, destination, schedule, booking, payment, wishlist, notification, notice, and shared counter/liked frontend types.
+- Added schema-verified Tour, Destination, Wishlist, TourSchedule, Booking, Payment, Notification, Notice, and admin Agent Request GraphQL documents.
+- Added primary public `/tour` and `/tour/detail` routes.
+- Converted `/property` and `/property/detail` into compatibility wrappers that redirect users to tour routes.
+- Migrated homepage tour discovery sections to `getTours` and added a destination-backed tour header filter.
+- Migrated guide detail listings from property APIs to tour APIs.
+- Added mypage tour surfaces: Add Tour, My Tours, Saved Tours through Wishlist, and Recently Viewed Tours.
+- Added signup-time Guide/Operator request fields and mypage display of `agentRequestStatus`, request message, experience, and verification state.
+- Replaced admin property management screen content with Tour Management while keeping `_admin/properties` as a compatibility URL.
+- Added admin Guide/Operator request management using `getAgentRequestsByAdmin` and `reviewAgentRequestByAdmin`.
+- Connected public CS notices to `getNotices`.
+- Preserved BoardArticle/community routes and explicitly set article comments to `CommentGroup.ARTICLE`.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `yarn build` passed.
+
+Notes:
+- Legacy property files were not removed. They remain until all imports are migrated and the removal pass can be validated separately.
+- Booking, payment, and notification GraphQL documents/types are present for staged UI integration, but full booking/payment/notification UX is deferred.
