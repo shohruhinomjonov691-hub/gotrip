@@ -8,6 +8,7 @@ import { ViewModule } from '../view/view.module';
 import { MemberModule } from '../member/member.module';
 import { LikeModule } from '../like/like.module';
 import { TourScheduleModule } from '../tour-schedule/tour-schedule.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
 	imports: [
@@ -22,6 +23,7 @@ import { TourScheduleModule } from '../tour-schedule/tour-schedule.module';
 		MemberModule,
 		LikeModule,
 		TourScheduleModule,
+		NotificationModule,
 	],
 	providers: [TourResolver, TourService],
 	exports: [TourService],

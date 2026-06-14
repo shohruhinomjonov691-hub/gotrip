@@ -10,6 +10,7 @@ describe('TourService.createTour', () => {
 	let service: TourService;
 	let tourModel: { create: jest.Mock };
 	let memberService: { getMember: jest.Mock; memberStatsEditor: jest.Mock };
+	let notificationService: { notifyLikeCreated: jest.Mock };
 
 	const memberId = new Types.ObjectId();
 	const spoofedMemberId = new Types.ObjectId();
@@ -36,8 +37,18 @@ describe('TourService.createTour', () => {
 			getMember: jest.fn(),
 			memberStatsEditor: jest.fn(),
 		};
+		notificationService = {
+			notifyLikeCreated: jest.fn(),
+		};
 
-		service = new TourService(tourModel as any, memberService as any, {} as any, {} as any, {} as any);
+		service = new TourService(
+			tourModel as any,
+			memberService as any,
+			{} as any,
+			{} as any,
+			{} as any,
+			notificationService as any,
+		);
 	});
 
 	it('rejects USER members without creating a tour', async () => {

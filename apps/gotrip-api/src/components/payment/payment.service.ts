@@ -170,6 +170,7 @@ export class PaymentService {
 			.exec();
 		if (!payment) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 
+		await this.bookingService.markBookingPaymentFailed(payment.bookingId);
 		await this.notificationService.notifyPaymentFailed(payment._id);
 		return payment;
 	}

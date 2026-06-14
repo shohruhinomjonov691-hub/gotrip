@@ -29,10 +29,8 @@
 | Priority | Task | Notes |
 | --- | --- | --- |
 | P0 | Rebuild social indexes during migration | Clean duplicate historical like/view rows before applying group-aware unique indexes in production |
-| P1 | Decide favorite compatibility | Existing `getFavorites` still uses likes; frontend should migrate saved-item UX to wishlist |
-| P2 | Add pending booking expiry job | Call `expirePendingBookings()` from a later batch/cron phase |
 | P2 | Tune ranking weights | Adjust batch formulas after real GoTrip engagement and booking data is available |
-| P2 | Expand notification coverage | Add refund/cancel, like/follow, admin notice, and notification preference workflows in later phases |
+| P2 | Expand notification coverage | Add refund/cancel, admin notice broadcast/recipient selection, and notification preference workflows in later phases |
 
 ## Frontend Follow-Up
 

@@ -22,6 +22,7 @@ import { LikeInput } from '../../libs/dto/like/like.input';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { TourScheduleService } from '../tour-schedule/tour-schedule.service';
 import { MemberType } from '../../libs/enums/member.enum';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class TourService {
@@ -31,6 +32,7 @@ export class TourService {
 		private viewService: ViewService,
 		private likeService: LikeService,
 		private tourScheduleService: TourScheduleService,
+		private notificationService: NotificationService,
 	) {}
 
 	public async createTour(memberId: ObjectId, input: TourInput): Promise<Tour> {
@@ -156,6 +158,7 @@ export class TourService {
 	}
 
 	public async getFavorites(memberId: ObjectId, input: OrdinaryInquiry): Promise<Tours> {
+		// Legacy like-based favorites. Saved-tour UX should use Wishlist APIs instead.
 		return await this.likeService.getFavoriteTours(memberId, input);
 	}
 
@@ -207,6 +210,9 @@ export class TourService {
 
 		const modifier: number = await this.likeService.toggleLike(input);
 		const result = await this.tourStatsEditor({ _id: likeRefId, targetKey: 'tourLikes', modifier: modifier });
+		if (modifier === 1) {
+			await this.notificationService.notifyLikeCreated(memberId, target.memberId, LikeGroup.TOUR, likeRefId);
+		}
 
 		if (!result) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
 		return result;

@@ -10,6 +10,7 @@ import MemberSchema from 'apps/gotrip-api/src/schemas/Member.model';
 import BookingSchema from 'apps/gotrip-api/src/schemas/Booking.model';
 import WishlistSchema from 'apps/gotrip-api/src/schemas/Wishlist.model';
 import DestinationSchema from 'apps/gotrip-api/src/schemas/Destination.model';
+import TourScheduleSchema from 'apps/gotrip-api/src/schemas/TourSchedule.model';
 
 @Module({
 	imports: [
@@ -22,6 +23,7 @@ import DestinationSchema from 'apps/gotrip-api/src/schemas/Destination.model';
 			{ name: 'Booking', schema: BookingSchema },
 			{ name: 'Wishlist', schema: WishlistSchema },
 			{ name: 'Destination', schema: DestinationSchema },
+			{ name: 'TourSchedule', schema: TourScheduleSchema },
 		]),
 	],
 	controllers: [BatchController],

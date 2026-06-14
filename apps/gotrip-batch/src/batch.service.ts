@@ -4,9 +4,16 @@ import { Booking } from 'apps/gotrip-api/src/libs/dto/booking/booking';
 import { Destination } from 'apps/gotrip-api/src/libs/dto/destination/destination';
 import { Member } from 'apps/gotrip-api/src/libs/dto/member/member';
 import { Tour } from 'apps/gotrip-api/src/libs/dto/tour/tour';
+import { TourSchedule } from 'apps/gotrip-api/src/libs/dto/tour-schedule/tour-schedule';
 import { Wishlist } from 'apps/gotrip-api/src/libs/dto/wishlist/wishlist';
 import { MemberStatus, MemberType } from 'apps/gotrip-api/src/libs/enums/member.enum';
-import { BookingStatus, DestinationStatus, TourStatus, WishlistGroup } from 'apps/gotrip-api/src/libs/enums/tour.enum';
+import {
+	BookingStatus,
+	DestinationStatus,
+	TourScheduleStatus,
+	TourStatus,
+	WishlistGroup,
+} from 'apps/gotrip-api/src/libs/enums/tour.enum';
 import { Model } from 'mongoose';
 
 @Injectable()
@@ -17,6 +24,7 @@ export class BatchService {
 		@InjectModel('Booking') private readonly bookingModel: Model<Booking>,
 		@InjectModel('Wishlist') private readonly wishlistModel: Model<Wishlist>,
 		@InjectModel('Destination') private readonly destinationModel: Model<Destination>,
+		@InjectModel('TourSchedule') private readonly tourScheduleModel: Model<TourSchedule>,
 	) {}
 
 	public async batchRollback(): Promise<void> {
@@ -142,6 +150,40 @@ export class BatchService {
 		await Promise.all(promisedList);
 	}
 
+	public async batchExpirePendingBookings(): Promise<number> {
+		const expiredBookings = await this.bookingModel
+			.find({
+				bookingStatus: BookingStatus.PENDING,
+				expiresAt: { $lt: new Date() },
+			})
+			.exec();
+
+		let expiredCount = 0;
+		for (const booking of expiredBookings) {
+			const cancelled = await this.bookingModel
+				.findOneAndUpdate(
+					{
+						_id: booking._id,
+						bookingStatus: BookingStatus.PENDING,
+						expiresAt: { $lt: new Date() },
+					},
+					{
+						bookingStatus: BookingStatus.CANCELLED,
+						cancelReason: 'Booking expired before payment.',
+						cancelledAt: new Date(),
+					},
+					{ new: true },
+				)
+				.exec();
+			if (!cancelled) continue;
+
+			await this.releaseReservedScheduleSeats(cancelled.scheduleId, cancelled.peopleCount);
+			expiredCount++;
+		}
+
+		return expiredCount;
+	}
+
 	public getHello(): string {
 		return 'Welcome to GoTrip BATCH Server!';
 	}
@@ -193,6 +235,36 @@ export class BatchService {
 			.exec();
 
 		return this.shapeCountMap(result);
+	}
+
+	private async releaseReservedScheduleSeats(scheduleId: unknown, seats: number): Promise<void> {
+		if (!Number.isInteger(seats) || seats < 1) return;
+
+		const schedule = await this.tourScheduleModel
+			.findOneAndUpdate(
+				{
+					_id: scheduleId,
+					scheduleStatus: {
+						$in: [
+							TourScheduleStatus.ACTIVE,
+							TourScheduleStatus.FULL,
+							TourScheduleStatus.PAUSED,
+							TourScheduleStatus.DELETED,
+						],
+					},
+					$expr: { $gte: [{ $subtract: ['$reservedSeats', seats] }, 0] },
+				},
+				{ $inc: { reservedSeats: -seats } },
+				{ new: true },
+			)
+			.exec();
+		if (!schedule) return;
+
+		if (schedule.scheduleStatus === TourScheduleStatus.FULL && schedule.reservedSeats < schedule.availableSeats) {
+			await this.tourScheduleModel
+				.findByIdAndUpdate(schedule._id, { scheduleStatus: TourScheduleStatus.ACTIVE }, { new: true })
+				.exec();
+		}
 	}
 
 	private shapeCountMap(result: { _id: unknown; total: number }[]): Map<string, number> {

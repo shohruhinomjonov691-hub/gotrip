@@ -14,6 +14,7 @@ import { Payment } from '../../libs/dto/payment/payment';
 import { Tour } from '../../libs/dto/tour/tour';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { CommentGroup, CommentStatus } from '../../libs/enums/comment.enum';
+import { LikeGroup } from '../../libs/enums/like.enum';
 import { NotificationGroup, NotificationStatus, NotificationType } from '../../libs/enums/notification.enum';
 import { T } from '../../libs/types/common';
 import { shapeIntoMongoObjectId } from '../../libs/config';
@@ -203,6 +204,39 @@ export class NotificationService {
 		});
 	}
 
+	public async notifyFollowCreated(followerId: ObjectId, followingId: ObjectId): Promise<Notification | null> {
+		return await this.createSystemNotification({
+			notificationType: NotificationType.FOLLOW_CREATED,
+			notificationGroup: NotificationGroup.MEMBER,
+			notificationTitle: 'New follower',
+			notificationDesc: 'A member started following you.',
+			authorId: followerId,
+			receiverId: followingId,
+		});
+	}
+
+	public async notifyLikeCreated(
+		authorId: ObjectId,
+		receiverId: ObjectId,
+		likeGroup: LikeGroup,
+		likeRefId: ObjectId,
+	): Promise<Notification | null> {
+		const notificationGroup = this.resolveLikeNotificationGroup(likeGroup);
+		if (!notificationGroup) return null;
+
+		return await this.createSystemNotification({
+			notificationType: NotificationType.LIKE_CREATED,
+			notificationGroup,
+			notificationTitle: 'New like',
+			notificationDesc: 'A member liked your content.',
+			authorId,
+			receiverId,
+			tourId: likeGroup === LikeGroup.TOUR ? likeRefId : undefined,
+			articleId: likeGroup === LikeGroup.ARTICLE ? likeRefId : undefined,
+			commentId: likeGroup === LikeGroup.COMMENT ? likeRefId : undefined,
+		});
+	}
+
 	private async createSystemNotification(input: NotificationInput): Promise<Notification | null> {
 		try {
 			if (input.authorId && String(input.authorId) === String(input.receiverId)) return null;
@@ -283,5 +317,14 @@ export class NotificationService {
 		if (comment.commentGroup === CommentGroup.MEMBER) return NotificationGroup.MEMBER;
 
 		return NotificationGroup.COMMENT;
+	}
+
+	private resolveLikeNotificationGroup(likeGroup: LikeGroup): NotificationGroup | null {
+		if (likeGroup === LikeGroup.MEMBER) return NotificationGroup.MEMBER;
+		if (likeGroup === LikeGroup.TOUR) return NotificationGroup.TOUR;
+		if (likeGroup === LikeGroup.ARTICLE) return NotificationGroup.ARTICLE;
+		if (likeGroup === LikeGroup.COMMENT) return NotificationGroup.COMMENT;
+
+		return null;
 	}
 }

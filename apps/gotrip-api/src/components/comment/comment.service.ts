@@ -72,6 +72,7 @@ export class CommentService {
 						targetKey: 'destinationComments',
 						modifier: 1,
 					});
+					if (input.rating !== undefined) await this.recalculateDestinationRating(input.commentRefId);
 					break;
 			}
 		}
@@ -98,6 +99,13 @@ export class CommentService {
 			.exec();
 
 		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+		if (
+			input.rating !== undefined &&
+			result.commentGroup === CommentGroup.DESTINATION &&
+			!result.parentCommentId
+		) {
+			await this.recalculateDestinationRating(result.commentRefId);
+		}
 		return result;
 	}
 
@@ -146,11 +154,16 @@ export class CommentService {
 			likeGroup: LikeGroup.COMMENT,
 		});
 
-		return await this.commentStatsEditor({
+		const result = await this.commentStatsEditor({
 			_id: likeRefId,
 			targetKey: 'commentLikes',
 			modifier,
 		});
+		if (modifier === 1) {
+			await this.notificationService.notifyLikeCreated(memberId, targetComment.memberId, LikeGroup.COMMENT, likeRefId);
+		}
+
+		return result;
 	}
 
 	public async commentStatsEditor(input: StatisticModifier): Promise<Comment> {
@@ -170,8 +183,17 @@ export class CommentService {
 	}
 
 	public async removeCommentByAdmin(input: ObjectId): Promise<Comment> {
+		const target = await this.commentModel.findById(input).exec();
 		const result = await this.commentModel.findByIdAndDelete(input).exec();
 		if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
+
+		if (
+			target?.commentGroup === CommentGroup.DESTINATION &&
+			!target.parentCommentId &&
+			target.rating !== undefined
+		) {
+			await this.recalculateDestinationRating(target.commentRefId);
+		}
 		return result;
 	}
 
@@ -183,5 +205,25 @@ export class CommentService {
 		if (input.commentGroup === CommentGroup.TOUR && !input.parentCommentId && input.rating === undefined) {
 			throw new BadRequestException(Message.BAD_REQUEST);
 		}
+	}
+
+	private async recalculateDestinationRating(destinationId: ObjectId): Promise<void> {
+		const result = await this.commentModel
+			.aggregate([
+				{
+					$match: {
+						commentGroup: CommentGroup.DESTINATION,
+						commentRefId: destinationId,
+						commentStatus: CommentStatus.ACTIVE,
+						rating: { $gte: 1, $lte: 5 },
+						$or: [{ parentCommentId: { $exists: false } }, { parentCommentId: null }],
+					},
+				},
+				{ $group: { _id: '$commentRefId', averageRating: { $avg: '$rating' } } },
+			])
+			.exec();
+
+		const destinationRating = result.length ? Math.round(result[0].averageRating * 10) / 10 : 0;
+		await this.destinationService.updateDestinationRating(destinationId, destinationRating);
 	}
 }

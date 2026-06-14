@@ -37,3 +37,9 @@
 - Use signup-time fields `wantsToBecomeAgent`, `agentRequestMessage`, and `agentExperience` for initial Guide/Operator requests until a separate verified self-service request mutation exists.
 - Use Wishlist for saved tours and reserve Likes for social engagement/ranking.
 - Preserve legacy property files until all imports are migrated and TypeScript/build validation passes.
+
+## 2026-06-14 - Backend Audit Decisions
+
+- Keep payment internal/demo-only: admin failed payments cancel the pending booking and release seats; users create a new booking if they still want the tour.
+- Keep `getFavorites` as a legacy like-based query; saved/favorite UX must use `toggleWishlist`, `getMyWishlist`, and `checkWishlist`.
+- Do not auto-create `ADMIN_NOTICE` notifications yet because the notification model requires a concrete `receiverId` and has no broadcast or recipient-selection model.

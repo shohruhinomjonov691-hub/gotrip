@@ -182,6 +182,14 @@ export class DestinationService {
 		return result;
 	}
 
+	public async updateDestinationRating(destinationId: ObjectId, destinationRating: number): Promise<Destination> {
+		const result = await this.destinationModel
+			.findByIdAndUpdate(destinationId, { destinationRating }, { new: true })
+			.exec();
+		if (!result) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		return result;
+	}
+
 	private shapePublicMatchQuery(match: T, input: DestinationsInquiry): void {
 		const { country, city, text } = input.search;
 		if (country) match.destinationCountry = { $regex: new RegExp(country, 'i') };

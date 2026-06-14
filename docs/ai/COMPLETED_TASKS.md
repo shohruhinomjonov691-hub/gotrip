@@ -162,6 +162,18 @@ Completed the breaking backend migration from the old real-estate `Property` cat
 | Tests | Added focused `createTour` service tests and `RolesGuard` role tests for `USER`, `ADMIN`, and `AGENT` behavior |
 | Validation results | API TypeScript validation and focused Jest specs passed |
 
+## Latest Phase: Backend Audit Fixes
+
+| Area | Completed Change |
+| --- | --- |
+| Booking expiry | Added batch cron wiring that cancels expired `PENDING` bookings and releases reserved schedule seats |
+| Payment failure | Admin failed payments now cancel the pending booking and release reserved seats through booking lifecycle helpers |
+| Destination ratings | Rated top-level destination comments recalculate `destinationRating`; destination ratings remain optional |
+| Notifications | Added safe automatic `FOLLOW_CREATED` and owner-backed `LIKE_CREATED` notifications; destination likes are skipped |
+| Admin notices | Left `ADMIN_NOTICE` auto-broadcast unimplemented because notifications require a concrete `receiverId` |
+| Favorites guidance | Kept legacy like-based `getFavorites`; documented Wishlist APIs as the saved/favorite UX source |
+| Validation results | API and batch TypeScript validations plus build passed |
+
 ## Validation Status
 
 | Check | Command | Status |
@@ -179,7 +191,6 @@ Completed the breaking backend migration from the old real-estate `Property` cat
 | --- | --- |
 | Data | Migrate existing `properties` documents into `tours` with curated tour defaults |
 | Frontend | Update GraphQL documents and UI adapters to call current GoTrip operations directly |
-| Booking API | Add future batch-expiry workflow |
 | Tests | Add behavior tests around tour CRUD, saved/visited tours, comments/ratings, bookings, payments, wishlists, notifications, notices, and batch ranking |
 
 ## 2026-06-09 - Frontend Tour Migration Pass
@@ -241,3 +252,28 @@ Validation:
 
 Notes:
 - GraphQL documents, Apollo integration, backend URLs, route names, MemberType roles, compatibility routes, booking logic, and payment logic were not changed.
+
+## 2026-06-12 - Frontend Premium GoTrip UI Completion Pass
+
+Completed a broader GoTrip frontend UI/UX implementation pass in `GoTrip-next` using Stitch, ZIP design references, and the GoTrip navbar screenshot as visual direction while preserving the existing Next.js Pages Router, Apollo/GraphQL integration, backend operations, and compatibility routes.
+
+Implemented:
+- Added a shared GoTrip theme layer with light/dark CSS variables, premium travel surfaces, glass utilities, responsive card/button/empty states, and reduced-motion handling.
+- Rebuilt the shared desktop navbar as a premium dark glass navigation surface and added notification dropdown, language switcher, theme support, and mobile bottom navigation.
+- Added dedicated destination routes for listing and detail, using existing destination GraphQL operations and destination-based tour discovery links.
+- Added homepage destination highlights backed by `getDestinations` and lazy-loaded destination imagery.
+- Upgraded tour detail booking flow so schedule selection prepares a draft first, then review creates a pending booking with the verified `createBooking` payload, and payment uses the verified `createPayment` payload.
+- Added mypage booking, payment, and notification center panels using existing GraphQL operations only.
+- Added an admin dashboard using existing admin totals only and TODO notes for unavailable aggregate metrics.
+- Improved community/mobile/member/about visible UI copy and removed visible real-estate terminology from active GoTrip surfaces while preserving internal compatibility keys.
+- Added Uzbek locale readiness and kept English, Korean, Russian, and Uzbek in the i18n config.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `yarn build` passed.
+- `yarn lint` could not run because `next lint` prompted for first-time ESLint configuration.
+- Local HTTP smoke checks returned `200 OK` for `/`, `/destination`, `/destination/detail`, `/tour`, `/tour/detail`, `/community`, `/mypage`, and `/_admin`.
+
+Notes:
+- No new GraphQL operations were created.
+- Backend limitations remain for member email hydration and admin aggregate analytics such as revenue totals, conversion rates, cancellation ratios, and time-series charts.

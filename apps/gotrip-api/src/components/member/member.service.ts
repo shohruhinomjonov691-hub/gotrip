@@ -161,6 +161,9 @@ export class MemberService {
 
 		const modifier: number = await this.likeService.toggleLike(input);
 		const result = await this.memberStatsEditor({ _id: likeRefId, targetKey: 'memberLikes', modifier: modifier });
+		if (modifier === 1) {
+			await this.notificationService.notifyLikeCreated(memberId, target._id, LikeGroup.MEMBER, likeRefId);
+		}
 
 		if (!result) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
 		return result;

@@ -3,6 +3,7 @@ import { BatchService } from './batch.service';
 import { Cron, Interval, Timeout } from '@nestjs/schedule';
 import {
 	BATCH_DESTINATION_TOUR_COUNTS,
+	BATCH_EXPIRE_PENDING_BOOKINGS,
 	BATCH_ROLLBACK,
 	BATCH_TOP_AGENTS,
 	BATCH_TOP_DESTINATIONS,
@@ -70,6 +71,17 @@ export class BatchController {
 			this.logger['context'] = BATCH_TOP_DESTINATIONS;
 			this.logger.debug('EXECUTED!');
 			await this.batchService.batchTopDestinations();
+		} catch (err) {
+			this.logger.error(err);
+		}
+	}
+
+	@Cron('0 * * * * *', { name: BATCH_EXPIRE_PENDING_BOOKINGS })
+	public async batchExpirePendingBookings() {
+		try {
+			this.logger['context'] = BATCH_EXPIRE_PENDING_BOOKINGS;
+			this.logger.debug('EXECUTED!');
+			await this.batchService.batchExpirePendingBookings();
 		} catch (err) {
 			this.logger.error(err);
 		}
