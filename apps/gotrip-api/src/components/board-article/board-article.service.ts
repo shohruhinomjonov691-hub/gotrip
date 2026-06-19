@@ -131,6 +131,9 @@ export class BoardArticleService {
 			.findOne({ _id: likeRefId, articleStatus: BoardArticleStatus.ACTIVE })
 			.exec();
 		if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		if (String(target.memberId) === String(memberId)) {
+			throw new BadRequestException('Cannot like your own board article.');
+		}
 
 		const input: LikeInput = {
 			memberId: memberId,

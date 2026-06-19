@@ -201,6 +201,7 @@ export class TourService {
 	public async likeTargetTour(memberId: ObjectId, likeRefId: ObjectId): Promise<Tour> {
 		const target: Tour | null = await this.tourModel.findOne({ _id: likeRefId, tourStatus: TourStatus.ACTIVE }).exec();
 		if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		if (String(target.memberId) === String(memberId)) throw new BadRequestException('Cannot like your own tour.');
 
 		const input: LikeInput = {
 			memberId: memberId,

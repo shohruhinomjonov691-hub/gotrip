@@ -7,10 +7,14 @@ import { NoticeUpdate } from '../../libs/dto/notice/notice.update';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { NoticeStatus } from '../../libs/enums/notice.enum';
 import { T } from '../../libs/types/common';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class NoticeService {
-	constructor(@InjectModel('Notice') private readonly noticeModel: Model<Notice>) {}
+	constructor(
+		@InjectModel('Notice') private readonly noticeModel: Model<Notice>,
+		private notificationService: NotificationService,
+	) {}
 
 	public async getNotices(input: NoticesInquiry): Promise<Notices> {
 		const match: T = { noticeStatus: NoticeStatus.ACTIVE };
@@ -39,10 +43,12 @@ export class NoticeService {
 
 	public async createNoticeByAdmin(memberId: ObjectId, input: NoticeInput): Promise<Notice> {
 		try {
-			return await this.noticeModel.create({
+			const notice = await this.noticeModel.create({
 				...input,
 				memberId,
 			});
+			await this.notificationService.notifyAdminNoticeCreated(notice);
+			return notice;
 		} catch (err) {
 			console.log('Error, Service.model:', err);
 			throw new BadRequestException(Message.CREATE_FAILED);

@@ -174,6 +174,19 @@ Completed the breaking backend migration from the old real-estate `Property` cat
 | Favorites guidance | Kept legacy like-based `getFavorites`; documented Wishlist APIs as the saved/favorite UX source |
 | Validation results | API and batch TypeScript validations plus build passed |
 
+## Latest Phase: Backend Hardening Pass
+
+| Area | Completed Change |
+| --- | --- |
+| Member security | Regular member updates now strip self-submitted `memberType` and `memberStatus`; regular/admin password updates hash `memberPassword` through the shared auth hashing helper |
+| Comment hierarchy | `getComments` now returns top-level comments by default and only replies when `parentCommentId` is supplied, preserving existing pagination |
+| Social likes | Tour, member, and board-article like mutations now reject self-likes with clear `BadRequestException` messages while preserving valid like notifications |
+| Demo payments | `createPayment` now creates the internal demo payment and immediately reuses the payment-success workflow to mark it paid, confirm the booking, set `paidAt`/`transactionId`, and notify the member |
+| Admin notices | `createNoticeByAdmin` now broadcasts `ADMIN_NOTICE` notifications to all active members using batched notification insertion and existing notification fields |
+| Lifecycle consistency | Existing booking and payment lifecycle methods were preserved while centralizing payment success behavior |
+| Tests | Added focused service specs for password hashing, comment hierarchy, self-like prevention, demo payment success, admin payment lifecycle methods, and admin notice broadcast |
+| Validation results | Focused hardening Jest specs, API and batch TypeScript validations, and full build passed |
+
 ## Validation Status
 
 | Check | Command | Status |

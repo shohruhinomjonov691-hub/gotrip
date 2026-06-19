@@ -112,7 +112,11 @@ export class CommentService {
 	public async getComments(memberId: ObjectId, input: CommentsInquiry): Promise<Comments> {
 		const { commentGroup, commentRefId, parentCommentId } = input.search;
 		const match: T = { commentGroup, commentRefId, commentStatus: CommentStatus.ACTIVE };
-		if (parentCommentId) match.parentCommentId = parentCommentId;
+		if (parentCommentId) {
+			match.parentCommentId = parentCommentId;
+		} else {
+			match.$or = [{ parentCommentId: { $exists: false } }, { parentCommentId: null }];
+		}
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
 		const result: Comments[] = await this.commentModel

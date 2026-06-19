@@ -4,6 +4,8 @@ import { Model, ObjectId } from 'mongoose';
 import { Booking } from '../../libs/dto/booking/booking';
 import { BoardArticle } from '../../libs/dto/board-article/board-article';
 import { Comment } from '../../libs/dto/comment/comment';
+import { Member } from '../../libs/dto/member/member';
+import { Notice } from '../../libs/dto/notice/notice';
 import { Notification, Notifications } from '../../libs/dto/notification/notification';
 import {
 	AllNotificationsInquiry,
@@ -15,6 +17,7 @@ import { Tour } from '../../libs/dto/tour/tour';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { CommentGroup, CommentStatus } from '../../libs/enums/comment.enum';
 import { LikeGroup } from '../../libs/enums/like.enum';
+import { MemberStatus } from '../../libs/enums/member.enum';
 import { NotificationGroup, NotificationStatus, NotificationType } from '../../libs/enums/notification.enum';
 import { T } from '../../libs/types/common';
 import { shapeIntoMongoObjectId } from '../../libs/config';
@@ -25,10 +28,11 @@ export class NotificationService {
 		@InjectModel('Notification') private readonly notificationModel: Model<Notification>,
 		@InjectModel('Booking') private readonly bookingModel: Model<Booking>,
 		@InjectModel('Payment') private readonly paymentModel: Model<Payment>,
-		@InjectModel('Comment') private readonly commentModel: Model<Comment>,
-		@InjectModel('Tour') private readonly tourModel: Model<Tour>,
-		@InjectModel('BoardArticle') private readonly boardArticleModel: Model<BoardArticle>,
-	) {}
+			@InjectModel('Comment') private readonly commentModel: Model<Comment>,
+			@InjectModel('Tour') private readonly tourModel: Model<Tour>,
+			@InjectModel('BoardArticle') private readonly boardArticleModel: Model<BoardArticle>,
+			@InjectModel('Member') private readonly memberModel: Model<Member>,
+		) {}
 
 	public async createNotification(input: NotificationInput): Promise<Notification> {
 		if (input.authorId && String(input.authorId) === String(input.receiverId)) {
@@ -224,17 +228,42 @@ export class NotificationService {
 		const notificationGroup = this.resolveLikeNotificationGroup(likeGroup);
 		if (!notificationGroup) return null;
 
-		return await this.createSystemNotification({
-			notificationType: NotificationType.LIKE_CREATED,
-			notificationGroup,
-			notificationTitle: 'New like',
-			notificationDesc: 'A member liked your content.',
+			return await this.createSystemNotification({
+				notificationType: NotificationType.LIKE_CREATED,
+				notificationGroup,
+				notificationTitle: 'New like',
+				notificationDesc: 'A member liked your content.',
 			authorId,
 			receiverId,
-			tourId: likeGroup === LikeGroup.TOUR ? likeRefId : undefined,
-			articleId: likeGroup === LikeGroup.ARTICLE ? likeRefId : undefined,
-			commentId: likeGroup === LikeGroup.COMMENT ? likeRefId : undefined,
-		});
+				tourId: likeGroup === LikeGroup.TOUR ? likeRefId : undefined,
+				articleId: likeGroup === LikeGroup.ARTICLE ? likeRefId : undefined,
+				commentId: likeGroup === LikeGroup.COMMENT ? likeRefId : undefined,
+			});
+		}
+
+	public async notifyAdminNoticeCreated(notice: Notice): Promise<void> {
+		try {
+			const members = await this.memberModel
+				.find({ memberStatus: MemberStatus.ACTIVE })
+				.select('_id')
+				.lean()
+				.exec();
+			if (!members.length) return;
+
+			await this.notificationModel.insertMany(
+				members.map((member) => ({
+					notificationType: NotificationType.ADMIN_NOTICE,
+					notificationGroup: NotificationGroup.NOTICE,
+					notificationStatus: NotificationStatus.WAIT,
+					notificationTitle: notice.noticeTitle,
+					notificationDesc: notice.noticeContent.slice(0, 500),
+					receiverId: member._id,
+					memberId: member._id,
+				})),
+			);
+		} catch (err) {
+			console.log('Warning, admin notice notifications were not created:', err);
+		}
 	}
 
 	private async createSystemNotification(input: NotificationInput): Promise<Notification | null> {

@@ -41,12 +41,13 @@ export class PaymentService {
 		if (activePayment) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
 
 		try {
-			return await this.paymentModel.create({
+			const payment = await this.paymentModel.create({
 				...input,
 				paymentStatus: PaymentStatus.PENDING,
 				memberId,
 				tourId: booking.tourId,
 			});
+			return await this.executePaymentSuccess(payment._id, `DEMO-${payment._id}`);
 		} catch (err) {
 			console.log('Error, Service.model:', err);
 			throw new BadRequestException(Message.CREATE_FAILED);
@@ -136,25 +137,7 @@ export class PaymentService {
 	public async markPaymentSuccessByAdmin(paymentId: ObjectId, transactionId: string): Promise<Payment> {
 		if (!transactionId) throw new BadRequestException(Message.BAD_REQUEST);
 
-		const payment = await this.paymentModel
-			.findOneAndUpdate(
-				{
-					_id: paymentId,
-					paymentStatus: PaymentStatus.PENDING,
-				},
-				{
-					paymentStatus: PaymentStatus.PAID,
-					transactionId,
-					paidAt: new Date(),
-				},
-				{ new: true },
-			)
-			.exec();
-		if (!payment) throw new InternalServerErrorException(Message.UPDATE_FAILED);
-
-		await this.bookingService.markBookingConfirmed(payment.bookingId);
-		await this.notificationService.notifyPaymentSuccess(payment._id);
-		return payment;
+		return await this.executePaymentSuccess(paymentId, transactionId);
 	}
 
 	public async markPaymentFailedByAdmin(paymentId: ObjectId): Promise<Payment> {
@@ -224,6 +207,28 @@ export class PaymentService {
 			.exec();
 		if (!payment) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 
+		return payment;
+	}
+
+	private async executePaymentSuccess(paymentId: ObjectId, transactionId: string): Promise<Payment> {
+		const payment = await this.paymentModel
+			.findOneAndUpdate(
+				{
+					_id: paymentId,
+					paymentStatus: PaymentStatus.PENDING,
+				},
+				{
+					paymentStatus: PaymentStatus.PAID,
+					transactionId,
+					paidAt: new Date(),
+				},
+				{ new: true },
+			)
+			.exec();
+		if (!payment) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+
+		await this.bookingService.markBookingConfirmed(payment.bookingId);
+		await this.notificationService.notifyPaymentSuccess(payment._id);
 		return payment;
 	}
 

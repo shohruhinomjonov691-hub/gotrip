@@ -4,11 +4,13 @@ import { LikeGroup } from '../../libs/enums/like.enum';
 import { NotificationGroup, NotificationStatus, NotificationType } from '../../libs/enums/notification.enum';
 
 describe('NotificationService social helpers', () => {
-	let notificationModel: { create: jest.Mock };
+	let notificationModel: { create: jest.Mock; insertMany: jest.Mock };
+	let memberModel: { find: jest.Mock };
 	let service: NotificationService;
 
 	beforeEach(() => {
-		notificationModel = { create: jest.fn() };
+		notificationModel = { create: jest.fn(), insertMany: jest.fn() };
+		memberModel = { find: jest.fn() };
 		service = new NotificationService(
 			notificationModel as any,
 			{} as any,
@@ -16,6 +18,7 @@ describe('NotificationService social helpers', () => {
 			{} as any,
 			{} as any,
 			{} as any,
+			memberModel as any,
 		);
 	});
 
@@ -58,5 +61,46 @@ describe('NotificationService social helpers', () => {
 
 		expect(result).toBeNull();
 		expect(notificationModel.create).not.toHaveBeenCalled();
+	});
+
+	it('broadcasts admin notices to active members with one insertMany call', async () => {
+		const firstMemberId = new Types.ObjectId();
+		const secondMemberId = new Types.ObjectId();
+		memberModel.find.mockReturnValue({
+			select: jest.fn().mockReturnValue({
+				lean: jest.fn().mockReturnValue({
+					exec: jest.fn().mockResolvedValue([{ _id: firstMemberId }, { _id: secondMemberId }]),
+				}),
+			}),
+		});
+		notificationModel.insertMany.mockResolvedValue([]);
+
+		await service.notifyAdminNoticeCreated({
+			_id: new Types.ObjectId(),
+			noticeTitle: 'Platform update',
+			noticeContent: 'A'.repeat(600),
+		} as any);
+
+		expect(notificationModel.insertMany).toHaveBeenCalledTimes(1);
+		expect(notificationModel.insertMany).toHaveBeenCalledWith([
+			{
+				notificationType: NotificationType.ADMIN_NOTICE,
+				notificationGroup: NotificationGroup.NOTICE,
+				notificationStatus: NotificationStatus.WAIT,
+				notificationTitle: 'Platform update',
+				notificationDesc: 'A'.repeat(500),
+				receiverId: firstMemberId,
+				memberId: firstMemberId,
+			},
+			{
+				notificationType: NotificationType.ADMIN_NOTICE,
+				notificationGroup: NotificationGroup.NOTICE,
+				notificationStatus: NotificationStatus.WAIT,
+				notificationTitle: 'Platform update',
+				notificationDesc: 'A'.repeat(500),
+				receiverId: secondMemberId,
+				memberId: secondMemberId,
+			},
+		]);
 	});
 });

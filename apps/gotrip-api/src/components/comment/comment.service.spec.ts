@@ -93,4 +93,60 @@ describe('CommentService destination ratings', () => {
 		);
 		expect(commentModel.create).not.toHaveBeenCalled();
 	});
+
+	it('returns only top-level comments when no parent is supplied', async () => {
+		const tourId = new Types.ObjectId();
+		commentModel.aggregate.mockReturnValue(execResult([{ list: [], metaCounter: [] }]));
+
+		await service.getComments(new Types.ObjectId() as any, {
+			page: 1,
+			limit: 10,
+			search: {
+				commentGroup: CommentGroup.TOUR,
+				commentRefId: tourId,
+			},
+		} as any);
+
+		expect(commentModel.aggregate).toHaveBeenCalledWith(
+			expect.arrayContaining([
+				{
+					$match: {
+						commentGroup: CommentGroup.TOUR,
+						commentRefId: tourId,
+						commentStatus: 'ACTIVE',
+						$or: [{ parentCommentId: { $exists: false } }, { parentCommentId: null }],
+					},
+				},
+			]),
+		);
+	});
+
+	it('returns only replies when parent is supplied', async () => {
+		const tourId = new Types.ObjectId();
+		const parentCommentId = new Types.ObjectId();
+		commentModel.aggregate.mockReturnValue(execResult([{ list: [], metaCounter: [] }]));
+
+		await service.getComments(new Types.ObjectId() as any, {
+			page: 1,
+			limit: 10,
+			search: {
+				commentGroup: CommentGroup.TOUR,
+				commentRefId: tourId,
+				parentCommentId,
+			},
+		} as any);
+
+		expect(commentModel.aggregate).toHaveBeenCalledWith(
+			expect.arrayContaining([
+				{
+					$match: {
+						commentGroup: CommentGroup.TOUR,
+						commentRefId: tourId,
+						commentStatus: 'ACTIVE',
+						parentCommentId,
+					},
+				},
+			]),
+		);
+	});
 });

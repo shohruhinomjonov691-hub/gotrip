@@ -69,7 +69,11 @@ export class MemberService {
 	}
 
 	public async updateMember(memberId: ObjectId, input: MemberUpdate): Promise<Member> {
-		const { memberType: _memberType, ...safeInput } = input;
+		const { _id: _inputId, memberType: _memberType, memberStatus: _memberStatus, ...safeInput } = input;
+		if (safeInput.memberPassword) {
+			safeInput.memberPassword = await this.authService.hashPassword(safeInput.memberPassword);
+		}
+
 		const result: Member | null = await this.memberModel
 			.findOneAndUpdate(
 				{
@@ -152,6 +156,7 @@ export class MemberService {
 			.findOne({ _id: likeRefId, memberStatus: MemberStatus.ACTIVE })
 			.exec();
 		if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		if (String(target._id) === String(memberId)) throw new BadRequestException('Cannot like yourself.');
 
 		const input: LikeInput = {
 			memberId: memberId,
@@ -224,8 +229,14 @@ export class MemberService {
 	}
 
 	public async updateMemberByAdmin(input: MemberUpdate): Promise<Member> {
+		const update: T = { ...input };
+		delete update._id;
+		if (update.memberPassword) {
+			update.memberPassword = await this.authService.hashPassword(update.memberPassword);
+		}
+
 		const result: Member | null = await this.memberModel
-			.findOneAndUpdate({ _id: input._id }, input, { new: true })
+			.findOneAndUpdate({ _id: input._id }, update, { new: true })
 			.exec();
 		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 		return result;

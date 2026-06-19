@@ -8,8 +8,9 @@ import { TourCategory, TourLocation } from '../../libs/enums/tour.enum';
 
 describe('TourService.createTour', () => {
 	let service: TourService;
-	let tourModel: { create: jest.Mock };
+	let tourModel: { create: jest.Mock; findOne: jest.Mock };
 	let memberService: { getMember: jest.Mock; memberStatsEditor: jest.Mock };
+	let likeService: { toggleLike: jest.Mock };
 	let notificationService: { notifyLikeCreated: jest.Mock };
 
 	const memberId = new Types.ObjectId();
@@ -32,23 +33,27 @@ describe('TourService.createTour', () => {
 	beforeEach(() => {
 		tourModel = {
 			create: jest.fn(),
+			findOne: jest.fn(),
 		};
 		memberService = {
 			getMember: jest.fn(),
 			memberStatsEditor: jest.fn(),
+		};
+		likeService = {
+			toggleLike: jest.fn(),
 		};
 		notificationService = {
 			notifyLikeCreated: jest.fn(),
 		};
 
 		service = new TourService(
-			tourModel as any,
-			memberService as any,
-			{} as any,
-			{} as any,
-			{} as any,
-			notificationService as any,
-		);
+				tourModel as any,
+				memberService as any,
+				{} as any,
+				likeService as any,
+				{} as any,
+				notificationService as any,
+			);
 	});
 
 	it('rejects USER members without creating a tour', async () => {
@@ -91,5 +96,15 @@ describe('TourService.createTour', () => {
 			targetKey: 'memberTours',
 			modifier: 1,
 		});
+	});
+
+	it('rejects liking your own tour', async () => {
+		const execResult = (value: unknown) => ({ exec: jest.fn().mockResolvedValue(value) });
+		const tourId = new Types.ObjectId();
+		tourModel.findOne.mockReturnValue(execResult({ _id: tourId, memberId }));
+
+		await expect(service.likeTargetTour(memberId as any, tourId as any)).rejects.toThrow('Cannot like your own tour.');
+		expect(likeService.toggleLike).not.toHaveBeenCalled();
+		expect(notificationService.notifyLikeCreated).not.toHaveBeenCalled();
 	});
 });
