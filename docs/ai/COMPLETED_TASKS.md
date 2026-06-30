@@ -290,3 +290,358 @@ Validation:
 Notes:
 - No new GraphQL operations were created.
 - Backend limitations remain for member email hydration and admin aggregate analytics such as revenue totals, conversion rates, cancellation ratios, and time-series charts.
+
+## 2026-06-19 - Frontend Admin Route And Theme Cleanup
+
+Completed a small `GoTrip-next` cleanup pass without changing backend contracts, business logic, or page designs.
+
+Implemented:
+- Normalized the tour-backed admin inventory route from `/_admin/properties` to `/_admin/tours` while keeping `/_admin/properties` as a compatibility redirect.
+- Updated admin menu/dashboard links so Tours, Bookings, and Payments route to the tour management screen.
+- Removed unused legacy admin property GraphQL documents while preserving public legacy property documents that are still imported by compatibility components.
+- Aligned the MUI primary color with GoTrip blue and added missing GoTrip theme token aliases for primary, deep-ocean, on-background, slate text, and glass surface.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+
+## 2026-06-20 - Frontend Auth Cinematic Redesign
+
+Completed a focused `/account/join` redesign in `GoTrip-next` using the Stitch login and signup cinematic luxury screens as the primary visual reference.
+
+Implemented:
+- Replaced the mobile `LOGIN MOBILE` placeholder with the same responsive login/signup UI used across mobile, tablet, and desktop.
+- Added a premium travel background, deep-ocean brand panel, glassmorphic auth card, blue/gold tabs and focus states, and accessible labeled form controls.
+- Added Framer Motion entrance, tab, guide-request reveal, submit press, and subtle background motion with reduced-motion support.
+- Preserved auth helper calls, GraphQL operation names, signup payload names, `MemberType.USER` signup behavior, access token handling, and referrer redirects.
+- Added a minimal `PRODUCT.md` for local design-skill context.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+
+## 2026-06-20 - Frontend Mypage Profile And Wishlist Redesign
+
+Completed a focused `myProfile` and `savedTours` redesign in `GoTrip-next` using the Stitch profile and wishlist screens as visual references while preserving backend contracts and existing mypage routing.
+
+Implemented:
+- Replaced the `MY PROFILE PAGE MOBILE` placeholder with a responsive premium traveler profile UI across mobile, tablet, and desktop.
+- Added a refined avatar/upload area, profile stats, guide request status display, accessible form labels, inline error messaging, submit loading state, and reduced-motion-aware Framer Motion entrances.
+- Rebuilt Saved Tours as a wishlist-backed premium tour card surface using `getMyWishlist` and `toggleWishlist` only, with loading skeletons, empty/error states, image-led cards, remove-from-wishlist controls, and mobile horizontal card motion.
+- Added scoped responsive mypage styling using GoTrip theme tokens without touching bookings, payments, notifications, admin, community, or tour detail logic.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- Placeholder/search checks passed for mypage profile and saved-tour wishlist contracts.
+- Local HTTP smoke checks returned `200 OK` for `/mypage?category=myProfile` and `/mypage?category=savedTours`.
+
+## 2026-06-20 - Community Journal And Notices Redesign
+
+Completed a focused public Community and CS/Notices redesign in `GoTrip-next` using the Stitch Luxury Journal and Platform Notices references while preserving existing routes and backend contracts.
+
+Implemented:
+- Rebuilt `/community` as a responsive GoTrip Journal with an editorial hero, category filtering for `FREE`, `RECOMMEND`, `NEWS`, and `HUMOR`, featured-first article cards, loading/error/empty states, and reduced-motion-aware Framer Motion.
+- Rebuilt `/community/detail` as a responsive journal article view with preserved BoardArticle likes, `CommentGroup.ARTICLE`, comment creation, and owner-only comment update/delete actions.
+- Reworked `/cs` into a category-based help and notices center for `FAQ`, `TERMS`, and `INQUIRY`, retaining `tab=notice` compatibility and adding in-route notice detail via `noticeId` with the existing `getNotice` query.
+- Added premium responsive Community/CS styling using GoTrip theme tokens, accessible focus states, card hover/image motion, and a local FAQ fallback module.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- Local HTTP smoke checks returned `200 OK` for Community detail and all planned CS tab/detail URLs.
+- No GraphQL operation, enum, DTO, auth, route, booking/payment, admin, agent, or notification contract changes were made.
+
+## 2026-06-20 - Agent Hub Dashboard Refresh
+
+Implemented a focused agent-only mypage dashboard pass using the Stitch Agent Hub reference.
+
+- Rebuilt `myTours` into an operator hub with tour KPIs, status filters, inventory cards, schedule-health signals, loading/empty/error states, and an `UPDATE_TOUR` edit dialog.
+- Rebuilt `addTour` into a responsive portfolio-intake form while preserving the `CREATE_TOUR` payload and current tour enums.
+- Added an explicit managed-booking unavailable panel because no verified `GET_AGENT_BOOKINGS` contract exists in the frontend or migration docs.
+
+Validation: `yarn tsc --noEmit` passed.
+
+
+## 2026-06-20 - Final Public Tour Polish
+
+Completed a scoped `/tour` and `/tour/detail` refinement using the Stitch Tour Inventory and Tour Details references.
+
+- Reworked the public inventory into a desktop filter-sidebar layout with a compact mobile filter control, while keeping existing inquiry filters, URL hydration, search, sort, and pagination behavior.
+- Improved tour-card availability and operator context while keeping social likes and Wishlist saves as separate actions.
+- Wired existing `checkWishlist` state into tour detail, refetching it after `toggleWishlist`; added confirmed comment `rating` selection and read-only review ratings.
+- Kept schedule selection, booking creation, payment-request flow, `CommentGroup.TOUR`, and `WishlistGroup.TOUR` unchanged; added concise review/schedule retry states and reduced-motion-aware visual polish.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `git diff --check` passed.
+
+## 2026-06-20 - Admin Platform Control Redesign
+
+Implemented the focused admin control-center redesign using the Stitch Platform Control reference.
+
+- Reworked admin navigation, user administration, agent-request review, tour inventory, community moderation, and notice management into responsive operational surfaces with desktop tables and mobile cards.
+- Replaced static notice mock rows with live `getAllNoticesByAdmin` data and the existing notice update/delete mutations.
+- Added status badges plus loading, empty, error, and retry states while retaining existing admin filters, pagination, permissions, and action handlers.
+- Used reduced-motion-aware Framer Motion entrances and GoTrip control-center styling without introducing analytics or new GraphQL documents.
+
+Validation: `yarn tsc --noEmit` passed.
+
+## 2026-06-20 - Final Homepage Polish
+
+Completed a homepage-only refinement using the Stitch GoTrip Premium Travel Home reference.
+
+- Strengthened the cinematic deep-ocean hero and destination-backed discovery controls while preserving existing search URLs and routes.
+- Added explicit loading, empty, and retryable error states across featured tours, destinations, guides, Journal, and the new live Notices preview; fallback media remains image resilience only.
+- Kept existing tour social-like and Wishlist actions independent, and preserved `GET_TOURS`, `GET_DESTINATIONS`, `GET_AGENTS`, `GET_BOARD_ARTICLES`, and `GET_NOTICES`.
+- Applied responsive homepage-only visual polish, visible focus states, restrained motion, and reduced-motion support without changing public-page architecture or backend contracts.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `git diff --check` passed.
+
+## 2026-06-20 - P0 Mobile Placeholder Removal
+
+Completed a focused responsive repair for active guide, mypage, and member surfaces in GoTrip-next.
+
+- Replaced mobile placeholder branches with the existing functional guide list/detail, guide cards, reviews, article, editor, follower, and following UI trees.
+- Added narrowly scoped mobile reflow rules for guide controls, cards, reviews, mypage/member content, follow cards, and the existing article editor.
+- Preserved existing Apollo operations, routes, roles, comments, follows, likes, and article creation behavior; inactive property compatibility placeholders remain outside this pass.
+
+Validation:
+- yarn tsc --noEmit passed.
+- git diff --check passed.
+- Local route shells returned 200 OK for the affected guide, mypage, and member URLs.
+
+## 2026-06-21 - P1 Admin Route Honesty
+
+Completed a focused admin safety pass in GoTrip-next.
+
+- Kept dashboard totals backend-backed while limiting navigation to real admin routes; destination, booking, and payment cards now clearly show unavailable states instead of misleading links.
+- Replaced mock FAQ and inquiry administration with protected unavailable pages that direct administrators to live Notice management and its FAQ, TERMS, and INQUIRY categories.
+- Removed the inactive FAQ entry from Help Center navigation while preserving direct FAQ and inquiry routes for compatibility.
+
+Validation:
+- yarn tsc --noEmit passed.
+- git diff --check passed.
+- /_admin, /_admin/cs/faq, and /_admin/cs/inquiry returned 200 OK in the local smoke check.
+
+## 2026-06-21 - Active Surface Accessibility Pass
+
+Completed a targeted accessibility pass in GoTrip-next.
+
+- Added names and native button semantics to active header, chat, guide, community, and mypage icon controls.
+- Labelled active review, chat, and comment-edit fields; existing admin search and tour controls were retained.
+- Made configured footer destinations real links and marked unavailable footer/newsletter capabilities as disabled or decorative without adding backend subscriptions.
+- Added GoTrip blue focus-visible treatment across active desktop, mobile, and admin shells.
+
+Validation:
+- yarn tsc --noEmit passed.
+- git diff --check passed.
+- Public, mypage, and admin route shells returned 200 OK in the local smoke check.
+
+## 2026-06-21 - Frontend Phase 1 Legacy Property Cleanup
+
+Completed the safe deletion phase for unreachable Property-era frontend scaffolding.
+
+- Removed unused Property components, types, enums, styles, configuration exports, and their obsolete GraphQL documents.
+- Preserved `/property`, `/property/detail`, and `/_admin/properties` compatibility routes; kept active MemberProperties and legacy mypage/member category aliases unchanged.
+- Removed only dead homepage/mobile Property selectors; active tour, wishlist, and recently viewed tour flows remain on their tour-backed operations.
+
+Validation:
+- `git diff --check` passed.
+- Legacy-document and import scans passed.
+- Compatibility route smoke checks returned `200 OK`.
+- `yarn tsc --noEmit` remains blocked by the pre-existing `TS2590` union-complexity error in `libs/components/admin/community/CommunityArticleList.tsx`.
+
+## 2026-06-21 - P1 Guide, FAQ, and About Correctness Hardening
+
+Completed a focused correctness pass without changing GraphQL documents, DTOs, enums, routes, or backend contracts.
+
+- Corrected guide-profile review authentication so guests receive the existing login-required alert and signed-in non-owners can submit comments.
+- Fixed guide-card detail links and added an accessible guide-search label.
+- Replaced the local FAQ fallback with typed travel, booking, traveler, guide, account, community, and support guidance.
+- Removed unsupported About-page metrics, partner claims, stock contact details, and nonfunctional actions; added factual mobile capability and Help Center support content.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `git diff --check` passed.
+- `/agent`, `/agent/detail`, `/cs?tab=faq`, and `/about` returned `200 OK` in local smoke checks.
+
+## 2026-06-22 - Frontend Phase 2 Property-to-Tour Naming Migration
+
+Completed the active frontend naming migration while preserving legacy deep links and backend compatibility boundaries.
+
+- Renamed the tour-backed member inventory surface and stylesheet from Property to Tour terminology, including its query-local names and DOM selectors.
+- Made `/member` canonicalize missing or legacy `category=properties` URLs to `category=tours` without losing member query parameters.
+- Canonicalized legacy mypage categories (`addProperty`, `myProperties`, `myFavorites`, and `recentlyVisited`) to their Tour equivalents while retaining direct-link compatibility.
+- Removed only unreferenced Property-era UI helpers, selectors, and locale keys; retained redirect routes, enum aliases, JWT/data fallbacks, and static legacy assets.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `git diff --check` passed.
+
+## 2026-06-22 - Agent Tour Schedule Management
+
+Completed schedule management within the existing Agent Hub at `mypage?category=myTours`.
+
+- Added an owned-tour schedule dialog with query loading, empty, error/retry, desktop table, and mobile card states.
+- Added schedule creation, reservation-safe editing, and confirmed deletion using the existing agent schedule operations only.
+- Kept reserved seats read-only, derives `FULL` from capacity, validates dates, prices, and capacity client-side, and refreshes both schedules and agent tour inventory after changes.
+- Preserved existing agent role/ownership enforcement, tour editing, and booking/payment lifecycle behavior.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `git diff --check` passed.
+
+## 2026-06-22 - Admin Notice Create/Edit Completion
+
+Completed the live admin notice authoring workflow at `/_admin/cs/notice` using the existing notice operations only.
+
+- Added create and full edit dialogs with category, optional create status, title, and content validation, loading states, and inline save errors.
+- Added accessible edit controls to desktop and mobile notice rows while preserving status update, deletion, filtering, pagination, and admin permission behavior.
+- Added scoped responsive control-center styling for the editor without changing public CS surfaces or GraphQL contracts.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `yarn build` passed.
+- `git diff --check` passed.
+
+## 2026-06-22 - Admin Destination CRUD
+
+Completed the live destination administration surface at `/_admin/destinations` using the existing destination operations only.
+
+- Added responsive destination inventory controls with status, country, city, and text filters; desktop tables and mobile cards show live destination data, image resilience, dates, and soft-delete state.
+- Added validated create and edit dialogs for backend-confirmed destination fields, including newline-separated existing image paths or URLs; deleted records remain read-only because the backend rejects further updates.
+- Linked the existing backend-backed Destinations dashboard total and admin navigation to the new route without changing public destination pages or backend contracts.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `yarn build` passed.
+- `git diff --check` passed.
+
+## 2026-06-22 - Admin Booking And Payment Management
+
+Completed live booking and payment operations at `/_admin/bookings` and `/_admin/payments` using only the existing admin contracts.
+
+- Added responsive table/mobile-card management surfaces with backend-supported filters, pagination, loading, empty, error, and retry states.
+- Restricted booking controls to `PENDING → CONFIRMED`, `CONFIRMED → COMPLETED`, and confirmed cancellation with an administrator-entered reason.
+- Restricted payment controls to pending success/failure/cancel actions and paid refund actions; payment success requires an internal transaction reference, and all terminal records are read-only.
+- Linked the existing backend-backed dashboard totals and admin navigation to the new routes without changing checkout, mypage, auth, or backend lifecycle behavior.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `yarn build` passed.
+- `git diff --check` passed.
+
+## 2026-06-23 - Admin Notifications Audit And Comment Moderation
+
+Completed two backend-faithful admin audit surfaces without changing notification generation or public comment flows.
+
+- Added read-only `/_admin/notifications` with supported status, type, group, receiver, and member filters plus responsive audit rows and pagination.
+- Added target-scoped `/_admin/comments`, requiring the existing comment group and target ID query shape; it shows live comments and supports confirmed permanent removal through the existing admin mutation.
+- Added Audit navigation entries, kept comments target-scoped because no global admin comment inquiry exists, and retained all public/user comment behavior.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `yarn build` passed.
+- `git diff --check` passed.
+
+## 2026-06-25 - Final Migration-Seam Cleanup And Polish
+
+Completed a strict final frontend cleanup pass for visible GoTrip migration seams.
+
+- Deleted an unimported legacy mypage Article component and removed orphan real-estate room/filter selectors plus the unused `Home / For Rent` locale key.
+- Replaced the `/property` compatibility banner with an existing travel destination asset while preserving `/property`, `/property/detail`, and `/_admin/properties` redirects.
+- Reordered MyPage navigation around traveler tasks first, added missing mobile links, and kept Agent Hub links role-gated for approved agents.
+- Clarified public CS notices with an All Notices control, support-oriented Inquiry copy, FAQ fallback only when backend FAQ notices are empty, and admin helper copy explaining notice categories.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `yarn build` passed.
+- `git diff --check` passed.
+- Targeted legacy seam scan returned no matches.
+- Temporary dev-server smoke checks returned `200 OK` for the requested compatibility, MyPage, CS, and admin notice route shells.
+
+## 2026-06-25 - Agent Booking And Payment Hub
+
+Completed live agent booking and payment visibility inside the existing Agent Hub.
+
+- Added agent booking list/detail and status mutation documents for the backend-confirmed agent contracts only.
+- Replaced the previous unavailable booking panel with responsive booking management and read-only payment records inside `mypage?category=myTours`.
+- Restricted booking actions to backend-supported `PENDING -> CANCELLED` and `CONFIRMED -> COMPLETED`; payment records remain read-only with no gateway behavior.
+- Preserved public checkout, admin booking/payment pages, mypage traveler booking/payment pages, routes, DTOs, enums, and lifecycle behavior.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `yarn build` passed.
+- `git diff --check` passed.
+- Agent operation scan confirmed the new documents and Agent Hub usage.
+
+## 2026-06-27 - Final Active Property Cleanup
+
+Completed a narrow active-source cleanup for remaining GoTrip property migration seams.
+
+- Replaced active real-estate/home/garden icon references with existing travel-friendly discovery/review icons.
+- Renamed internal compatibility redirect component identifiers while preserving `/property`, `/property/detail`, and `/_admin/properties` routes.
+- Removed unused mock admin CS list components and unreferenced property-era images/icons/static folders.
+- Preserved `category=properties` alias handling, `memberProperties` JWT/data fallback, `CommentGroup.PROPERTY`, `ViewGroup.PROPERTY`, GraphQL documents, backend contracts, package metadata, and lock files.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `yarn build` passed.
+- `git diff --check` passed.
+- Targeted scans show no remaining property-named static assets or active real-estate image references; remaining source hits are compatibility/fallback/manual package-name items only.
+
+## 2026-06-27 - Full Light/Dark Mode Support
+
+Completed the GoTrip frontend light/dark mode foundation without changing GraphQL documents, routes, auth, or backend contracts.
+
+- Added a persisted color-mode provider with system preference fallback, document data-theme syncing, and a pre-hydration theme script.
+- Switched MUI to a mode-aware theme while preserving the existing light palette and adding dark paper, input, text, action, and divider colors.
+- Added accessible theme toggles to the public desktop header, mobile bottom navigation, and admin toolbar.
+- Expanded GoTrip theme tokens and added final desktop/mobile dark-mode cascade layers for active public, mypage/member/agent, tour, destination, community, CS, auth, footer, chat-adjacent shell, and admin surfaces.
+- Simplified two admin MUI-heavy pages with typed render helpers after TypeScript/build exposed TS2590 union-complexity blockers; data operations and actions are unchanged.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `yarn build` passed with existing Yarn cache/global-folder warnings, a Browserslist data warning, and existing react-i18next prerender warnings.
+- `git diff --check` passed before the completion-log append.
+- Local route smoke checks returned `200 OK` for `/`, `/tour`, `/tour/detail?id=smoke`, `/destination`, `/community?articleCategory=FREE`, `/cs?tab=faq`, `/account/join`, `/mypage`, and `/_admin`; rendered HTML includes the pre-hydration theme script and desktop theme toggle markup.
+
+## 2026-06-27 - Frontend Visual Convergence Pass
+
+- Tightened active GoTrip frontend surfaces toward Stitch visual references with a cinematic home hero image composition, shared glass and deep-ocean surface treatment, refined guide, account, admin, and CS rhythm, and stronger desktop/mobile responsive card proportions.
+- Replaced destination fallback-as-live-content behavior with backend-truthful empty/error states while keeping local travel imagery as media fallback only.
+- Preserved all GraphQL documents, DTOs/enums, auth/role logic, booking/payment lifecycle, wishlist/likes behavior, routes, and compatibility redirects.
+- Validation: yarn tsc --noEmit, yarn build, and git diff --check passed; representative dev routes returned 200 on localhost:3003.
+
+## 2026-06-27 - MCP-First App-Wide Stitch Convergence
+
+Completed an MCP-first visual convergence pass across active GoTrip frontend surfaces using Stitch project projects/12851649234565630887 as the source of truth.
+
+- Reworked the shared home hero into the Stitch full-bleed cinematic composition with centered editorial copy, trending chips, and a floating glass discovery panel.
+- Upgraded shared visual language for navigation, search panels, cards, destination grids, tour detail galleries, CS notices, wishlist cards, footer rhythm, light/dark contrast, and mobile responsiveness.
+- Added a live featured-notice composition on public CS and image-led overlay cards for real wishlist data while preserving all existing Apollo operations, routes, auth, booking/payment lifecycle, wishlist/likes separation, comments, localization, and compatibility redirects.
+
+Validation:
+- yarn tsc --noEmit passed.
+- yarn build passed with existing Yarn cache/global-folder, Browserslist, and react-i18next prerender warnings.
+- git diff --check passed.
+
+## 2026-06-27 - Stitch-Accurate Home Rebuild
+
+Rebuilt the GoTrip Home composition against Stitch screen abd2c71a791341c6a086194cbe25c4a0 while preserving Home GraphQL operations and route behavior. The pass aligned the cinematic hero/search panel, Curated Destinations, Elite Tour Collection, Dedicated Concierge, Voices of Exploration, and Concierge Network/Luxury Journal sections; folded live Journal and Notices previews into the lower Home block; retained disabled newsletter honesty; and added responsive light/dark Home styling plus restrained Framer Motion behavior. Validation passed: yarn tsc --noEmit, yarn build, git diff --check, and local / smoke check.
+
+## 2026-06-27 - Stitch Split-Hero Home Rebuild
+
+Replaced the GoTrip Home hero with the user-confirmed Stitch split-hero contract while preserving existing Home operations and routing. The new hero uses a full-viewport cinematic background, dark overlay, soft bottom transition, left-side headline/chips/CTA/search flow, right-side collage with one large image, two stacked images, and a floating premium card, plus rebuilt native search-panel UI over the existing GET_DESTINATIONS and /tour query behavior. Added terminal desktop/mobile Home styles for the split hero, collage, search panel, and transition into Curated Destinations. Validation passed: yarn tsc --noEmit, yarn build, git diff --check, and local / route smoke check.
+
+## 2026-06-27 - Navbar And Footer Stitch Alignment
+
+Completed a focused global shell alignment pass for GoTrip navigation and footer.
+
+- Rebuilt the desktop navbar around the Stitch-style glass surface, centered public navigation, authenticated-only My Page visibility, resilient GoTrip logo fallback, and preserved notification/profile/language/theme controls.
+- Reworked the footer into a deep-ocean brand, company, support, and global column layout with honest unavailable links and no unsupported newsletter subscription form.
+- Added terminal desktop/mobile shell styles for spacing, focus states, touch targets, light/dark readability, and responsive footer stacking without changing page content or backend contracts.
+
+Validation:
+- `yarn tsc --noEmit` passed.
+- `yarn build` passed with existing Yarn cache/global-folder, Browserslist, and react-i18next prerender warnings.
+- `git diff --check` passed.
