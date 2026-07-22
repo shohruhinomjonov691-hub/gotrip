@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsIn, IsInt, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
+import { ArrayNotEmpty, IsIn, IsInt, IsNotEmpty, IsOptional, Length, Max, Min } from 'class-validator';
 import { TourCategory, TourDifficulty, TourLanguage, TourLocation, TourStatus } from '../../enums/tour.enum';
 import * as mongoose from 'mongoose';
 import { availableTourSorts } from '../../config';
@@ -18,9 +18,10 @@ export class TourInput {
 	@IsNotEmpty()
 	@Length(3, 100)
 	@Field(() => String)
-	tourTitle: String;
+	tourTitle: string;
 
 	@IsNotEmpty()
+	@Min(1)
 	@Field(() => Number)
 	tourPrice: number;
 
@@ -49,6 +50,7 @@ export class TourInput {
 	tourAvailableSeats: number;
 
 	@IsNotEmpty()
+	@ArrayNotEmpty()
 	@Field(() => [String])
 	tourImages: string[];
 
@@ -81,10 +83,6 @@ export class TourInput {
 	@Field(() => TourDifficulty, { nullable: true })
 	tourDifficulty?: TourDifficulty;
 
-	@IsOptional()
-	@Field(() => String, { nullable: true })
-	destinationId?: mongoose.ObjectId;
-
 	memberId?: mongoose.ObjectId;
 }
 
@@ -97,7 +95,6 @@ export class PricesRange {
 	end: number;
 }
 
-@InputType()
 @InputType()
 export class PeriodsRange {
 	@Field(() => Date)
@@ -112,10 +109,6 @@ class PISearch {
 	@IsOptional()
 	@Field(() => String, { nullable: true })
 	memberId?: mongoose.ObjectId;
-
-	@IsOptional()
-	@Field(() => String, { nullable: true })
-	destinationId?: mongoose.ObjectId;
 
 	@IsOptional()
 	@Field(() => [TourLocation], { nullable: true })
@@ -151,6 +144,7 @@ export class ToursInquiry {
 
 	@IsNotEmpty()
 	@Min(1)
+	@Max(100)
 	@Field(() => Int)
 	limit: number;
 
@@ -184,6 +178,7 @@ export class AgentToursInquiry {
 
 	@IsNotEmpty()
 	@Min(1)
+	@Max(100)
 	@Field(() => Int)
 	limit: number;
 
@@ -225,6 +220,7 @@ export class AllToursInquiry {
 
 	@IsNotEmpty()
 	@Min(1)
+	@Max(100)
 	@Field(() => Int)
 	limit: number;
 
@@ -251,6 +247,7 @@ export class OrdinaryInquiry {
 
 	@IsNotEmpty()
 	@Min(1)
+	@Max(100)
 	@Field(() => Int)
 	limit: number;
 }

@@ -29,17 +29,8 @@ export class Notification {
 	@Field(() => String)
 	receiverId: mongoose.ObjectId;
 
-	@Field(() => String)
-	memberId: mongoose.ObjectId;
-
 	@Field(() => String, { nullable: true })
 	tourId?: mongoose.ObjectId;
-
-	@Field(() => String, { nullable: true })
-	bookingId?: mongoose.ObjectId;
-
-	@Field(() => String, { nullable: true })
-	paymentId?: mongoose.ObjectId;
 
 	@Field(() => String, { nullable: true })
 	articleId?: mongoose.ObjectId;

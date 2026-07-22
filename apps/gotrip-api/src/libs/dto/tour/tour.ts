@@ -3,7 +3,6 @@ import * as mongoose from 'mongoose';
 import { TourCategory, TourDifficulty, TourLanguage, TourLocation, TourStatus } from '../../enums/tour.enum';
 import { Member, TotalCounter } from '../member/member';
 import { MeLiked } from '../like/like';
-import { TourSchedule } from '../tour-schedule/tour-schedule';
 
 @ObjectType()
 export class Tour {
@@ -19,7 +18,6 @@ export class Tour {
 	@Field(() => TourLocation)
 	tourLocation: TourLocation;
 
-	@Field(() => String)
 	@Field(() => String)
 	tourTitle: string;
 
@@ -77,9 +75,6 @@ export class Tour {
 	@Field(() => String)
 	memberId: mongoose.ObjectId;
 
-	@Field(() => String, { nullable: true })
-	destinationId?: mongoose.ObjectId;
-
 	@Field(() => Date, { nullable: true })
 	deletedAt?: Date;
 
@@ -96,9 +91,6 @@ export class Tour {
 
 	@Field(() => Member, { nullable: true })
 	memberData?: Member;
-
-	@Field(() => [TourSchedule], { nullable: true })
-	schedules?: TourSchedule[];
 }
 
 @ObjectType()

@@ -645,3 +645,61 @@ Validation:
 - `yarn tsc --noEmit` passed.
 - `yarn build` passed with existing Yarn cache/global-folder, Browserslist, and react-i18next prerender warnings.
 - `git diff --check` passed.
+
+## 2026-07-19 - Scope Reduction To Catalog And Community
+
+Removed the booking, payment, wishlist, destination, and tour-schedule feature areas from both applications. GoTrip is now a tour catalog and community platform.
+
+Backend removals:
+- Modules, resolvers, and services: `booking`, `payment`, `destination`, `tour-schedule`, `wishlist`.
+- DTOs under `libs/dto/`: `booking`, `payment`, `destination`, `tour-schedule`, `wishlist`.
+- Schemas: `Booking.model.ts`, `Payment.model.ts`, `Destination.model.ts`, `TourSchedule.model.ts`, `Wishlist.model.ts`.
+- The `BookingStatus` enum and the `destinationId` field on `Tour`.
+- Batch destination ranking; `gotrip-batch` now runs `batchRollback`, `batchTopTours`, and `batchTopAgents` only.
+
+Frontend removals:
+- `mypage/MyBookings.tsx`, `mypage/MyPayments.tsx`.
+- `admin/bookings/`, `admin/payments/`, `admin/destinations/`.
+- `common/DestinationCard.tsx`, `homepage/DestinationHighlights.tsx`, and related Apollo documents.
+
+Remaining backend modules: `auth`, `member`, `tour`, `comment`, `like`, `view`, `follow`, `board-article`, `notice`, `notification`.
+
+Saved tours reverted to the like-based mechanism (`likeTargetTour`, `getFavoriteTours`), superseding the earlier wishlist-over-likes decision.
+
+The `bookings`, `payments`, `wishlists`, `destinations`, and `tourSchedules` MongoDB collections still exist and are now unused. See `NEXT_STEPS.md` for the drop task.
+
+## 2026-07-21 - Tour Schema And DTO Fixes
+
+- Removed a duplicated `@Field(() => String)` decorator above `tourTitle` in `libs/dto/tour/tour.ts`.
+- Added `memberId` to the compound unique index in `schemas/Tour.model.ts`. The index was `{ tourCategory, tourLocation, tourTitle, tourPrice }`, which blocked two different agents from listing comparable tours. It is now scoped per agent.
+- Realigned `AGENTS.md`, `BACKEND_MIGRATION.md`, `DECISIONS.md`, `FRONTEND_MIGRATION.md`, and `NEXT_STEPS.md` with the reduced scope.
+
+## 2026-07-22 - Backend Security And Business-Logic Hardening
+
+Audited the backend and fixed the critical and medium findings.
+
+Critical (security):
+- Upload path traversal / stored XSS: `imageUploader`/`imagesUploader` now reject any `target` outside the `member|tour|article` allowlist and derive the file extension from the trusted mimetype instead of the client filename (`libs/config.ts`, `member.resolver.ts`).
+- Stale-token authorization: added `AuthService.retrieveAuthMember`, which re-reads the member from the database and rejects blocked/deleted accounts. `AuthGuard`, `RolesGuard`, and `WithoutGuard` use it, so role/status changes take effect immediately instead of living inside the 30-day token. `AuthModule` now registers the Member model.
+- WebSocket PII leak: `socket.gateway.ts` now emits only `_id`, `memberNick`, `memberImage` (via `toPublicMember`) instead of the full member payload (phone, address, role, warnings).
+
+Medium (business logic and validation):
+- Tour status is reversible again: `updateTour`/`updateTourByAdmin` edit any non-deleted tour and adjust `memberTours` by status transition (listed = ACTIVE/PAUSED), so SOLD_OUT/PAUSED tours can be re-activated without corrupting the counter.
+- Comment target validation: `createComment` rejects comments whose tour/article/member target does not exist or is not active (no more orphan comments or 500s).
+- Comment counter sync: `removeCommentByAdmin` decrements the target's comment counter.
+- Regex hardening: `escapeRegex` applied to all user-supplied `$regex` searches (tour title, member nick, notice title/content) to prevent regex injection / ReDoS.
+- Pagination cap: every `*Inquiry.limit` now has `@Max(100)`.
+- Validation gaps: `tourPrice` gets `@Min(1)` (no free tours); `createTour` rejects `tourMinPeople > tourMaxPeople` and `tourAvailableSeats > tourMaxPeople`; password max length raised to 30 (min kept at 5 to avoid locking out existing users).
+- Config: CORS restricts to `ALLOWED_ORIGINS` in production (dev unchanged); GraphQL playground and introspection disabled in production.
+- Fixed the duplicate `@InputType()` on `PeriodsRange` and `tourTitle: String` -> `string`.
+- Realigned the superseded `ADMIN_NOTICE` decision in `DECISIONS.md` (the broadcast now exists in code).
+
+Validation: API and batch `tsc --noEmit`, `npm run build`, `jest` (15 tests), and a runtime bootstrap (Nest started, MongoDB connected) all passed.
+
+## 2026-07-22 - Minor Backend Correctness Fixes
+
+- Saved/visited tours no longer include deleted tours: `getFavoriteTours` and `getVisitedTours` now `$match` out `tourStatus: DELETED` after the tour `$lookup` (`like.service.ts`, `view.service.ts`).
+- `contactAgent` now requires an ACTIVE tour (was `findById`, any status), consistent with the public `getTour`.
+- `tourImages` gets `@ArrayNotEmpty()`, so a tour can no longer be created with an empty image list.
+
+Validation: API and batch `tsc --noEmit`, `npm run build`, `jest` (15 tests), and a runtime bootstrap all passed.

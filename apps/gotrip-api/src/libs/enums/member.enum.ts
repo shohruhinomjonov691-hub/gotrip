@@ -29,14 +29,3 @@ export enum MemberAuthType {
 registerEnumType(MemberAuthType, {
 	name: 'MemberAuthType',
 });
-
-export enum AgentRequestStatus {
-	NONE = 'NONE',
-	PENDING = 'PENDING',
-	APPROVED = 'APPROVED',
-	REJECTED = 'REJECTED',
-}
-
-registerEnumType(AgentRequestStatus, {
-	name: 'AgentRequestStatus',
-});

@@ -1,6 +1,8 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import * as mongoose from 'mongoose';
+import { IsNotEmpty, Length } from 'class-validator';
+import { Field, InputType } from '@nestjs/graphql';
 import { NotificationService } from './notification.service';
 import { Notification, Notifications } from '../../libs/dto/notification/notification';
 import { AllNotificationsInquiry, NotificationsInquiry } from '../../libs/dto/notification/notification.input';
@@ -11,9 +13,32 @@ import { MemberType } from '../../libs/enums/member.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { shapeIntoMongoObjectId } from '../../libs/config';
 
+@InputType()
+class ContactAgentInput {
+	@IsNotEmpty()
+	@Field(() => String)
+	tourId: string;
+
+	@IsNotEmpty()
+	@Length(1, 500)
+	@Field(() => String)
+	message: string;
+}
+
 @Resolver()
 export class NotificationResolver {
 	constructor(private readonly notificationService: NotificationService) {}
+
+	@UseGuards(AuthGuard)
+	@Mutation(() => Notification)
+	public async contactAgent(
+		@Args('input') input: ContactAgentInput,
+		@AuthMember('_id') memberId: mongoose.ObjectId,
+	): Promise<Notification> {
+		console.log('Mutation: contactAgent');
+		const tourId = shapeIntoMongoObjectId(input.tourId);
+		return await this.notificationService.contactAgent(memberId, tourId, input.message);
+	}
 
 	@UseGuards(AuthGuard)
 	@Query(() => Notifications)
@@ -68,8 +93,6 @@ export class NotificationResolver {
 
 	private shapeNotificationsInquiry(input: NotificationsInquiry): void {
 		if (input.search.tourId) input.search.tourId = shapeIntoMongoObjectId(input.search.tourId);
-		if (input.search.bookingId) input.search.bookingId = shapeIntoMongoObjectId(input.search.bookingId);
-		if (input.search.paymentId) input.search.paymentId = shapeIntoMongoObjectId(input.search.paymentId);
 		if (input.search.articleId) input.search.articleId = shapeIntoMongoObjectId(input.search.articleId);
 		if (input.search.commentId) input.search.commentId = shapeIntoMongoObjectId(input.search.commentId);
 	}
@@ -77,6 +100,5 @@ export class NotificationResolver {
 	private shapeAllNotificationsInquiry(input: AllNotificationsInquiry): void {
 		this.shapeNotificationsInquiry(input);
 		if (input.search.receiverId) input.search.receiverId = shapeIntoMongoObjectId(input.search.receiverId);
-		if (input.search.memberId) input.search.memberId = shapeIntoMongoObjectId(input.search.memberId);
 	}
 }

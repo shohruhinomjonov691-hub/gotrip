@@ -115,11 +115,6 @@ const TourSchema = new Schema(
 			ref: 'Member',
 		},
 
-		destinationId: {
-			type: Schema.Types.ObjectId,
-			ref: 'Destination',
-		},
-
 		deletedAt: {
 			type: Date,
 		},
@@ -127,6 +122,9 @@ const TourSchema = new Schema(
 	{ timestamps: true, collection: 'tours' },
 );
 
-TourSchema.index({ tourCategory: 1, tourLocation: 1, tourTitle: 1, tourPrice: 1 }, { unique: true });
+TourSchema.index(
+	{ memberId: 1, tourCategory: 1, tourLocation: 1, tourTitle: 1, tourPrice: 1 },
+	{ unique: true },
+);
 
 export default TourSchema;

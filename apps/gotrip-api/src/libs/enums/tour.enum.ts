@@ -33,6 +33,35 @@ export enum TourLocation {
 	CHONJU = 'CHONJU',
 	DAEJON = 'DAEJON',
 	JEJU = 'JEJU',
+	PARIS = 'PARIS',
+	LONDON = 'LONDON',
+	ROME = 'ROME',
+	BARCELONA = 'BARCELONA',
+	ISTANBUL = 'ISTANBUL',
+	DUBAI = 'DUBAI',
+	TOKYO = 'TOKYO',
+	BALI = 'BALI',
+	BANGKOK = 'BANGKOK',
+	SINGAPORE = 'SINGAPORE',
+	NEW_YORK = 'NEW_YORK',
+	TASHKENT = 'TASHKENT',
+	SAMARKAND = 'SAMARKAND',
+	CAIRO = 'CAIRO',
+	AMSTERDAM = 'AMSTERDAM',
+	MALDIVES = 'MALDIVES',
+	PRAGUE = 'PRAGUE',
+	SANTORINI = 'SANTORINI',
+	BUKHARA = 'BUKHARA',
+	KHIVA = 'KHIVA',
+	SHAHRISABZ = 'SHAHRISABZ',
+	CHORVOQ = 'CHORVOQ',
+	NUROTA = 'NUROTA',
+	AMIRSOY = 'AMIRSOY',
+	ZOMIN = 'ZOMIN',
+	CHIMYON = 'CHIMYON',
+	MUYNOQ = 'MUYNOQ',
+	NAMI = 'NAMI',
+	SEORAKSAN = 'SEORAKSAN',
 }
 registerEnumType(TourLocation, {
 	name: 'TourLocation',
@@ -57,61 +86,3 @@ registerEnumType(TourDifficulty, {
 	name: 'TourDifficulty',
 });
 
-export enum BookingStatus {
-	PENDING = 'PENDING',
-	CONFIRMED = 'CONFIRMED',
-	CANCELLED = 'CANCELLED',
-	COMPLETED = 'COMPLETED',
-}
-registerEnumType(BookingStatus, {
-	name: 'BookingStatus',
-});
-
-export enum DestinationStatus {
-	ACTIVE = 'ACTIVE',
-	PAUSED = 'PAUSED',
-	DELETED = 'DELETED',
-}
-registerEnumType(DestinationStatus, {
-	name: 'DestinationStatus',
-});
-
-export enum TourScheduleStatus {
-	ACTIVE = 'ACTIVE',
-	FULL = 'FULL',
-	PAUSED = 'PAUSED',
-	DELETED = 'DELETED',
-}
-registerEnumType(TourScheduleStatus, {
-	name: 'TourScheduleStatus',
-});
-
-export enum WishlistGroup {
-	TOUR = 'TOUR',
-	DESTINATION = 'DESTINATION',
-}
-registerEnumType(WishlistGroup, {
-	name: 'WishlistGroup',
-});
-
-export enum PaymentStatus {
-	PENDING = 'PENDING',
-	PAID = 'PAID',
-	FAILED = 'FAILED',
-	REFUNDED = 'REFUNDED',
-	CANCELLED = 'CANCELLED',
-}
-registerEnumType(PaymentStatus, {
-	name: 'PaymentStatus',
-});
-
-export enum PaymentMethod {
-	CARD = 'CARD',
-	BANK_TRANSFER = 'BANK_TRANSFER',
-	KAKAO_PAY = 'KAKAO_PAY',
-	NAVER_PAY = 'NAVER_PAY',
-	CASH = 'CASH',
-}
-registerEnumType(PaymentMethod, {
-	name: 'PaymentMethod',
-});

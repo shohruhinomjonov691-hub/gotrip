@@ -5,14 +5,19 @@ import { TourService } from '../tour/tour.service';
 import { BoardArticleService } from '../board-article/board-article.service';
 import { MemberService } from '../member/member.service';
 import { LikeService } from '../like/like.service';
-import { DestinationService } from '../destination/destination.service';
 import { CommentInput, CommentsInquiry } from '../../libs/dto/comment/comment.input';
 import { Comment, Comments } from '../../libs/dto/comment/comment';
+import { Tour } from '../../libs/dto/tour/tour';
+import { BoardArticle } from '../../libs/dto/board-article/board-article';
+import { Member } from '../../libs/dto/member/member';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { CommentGroup, CommentStatus } from '../../libs/enums/comment.enum';
+import { TourStatus } from '../../libs/enums/tour.enum';
+import { BoardArticleStatus } from '../../libs/enums/board-article.enum';
+import { MemberStatus } from '../../libs/enums/member.enum';
 import { CommentUpdate } from '../../libs/dto/comment/comment.update';
 import { LikeGroup } from '../../libs/enums/like.enum';
-import { StatisticModifier, T } from '../../libs/types/common';
+import { T } from '../../libs/types/common';
 import { lookupMember } from '../../libs/config';
 import { NotificationService } from '../notification/notification.service';
 
@@ -20,17 +25,19 @@ import { NotificationService } from '../notification/notification.service';
 export class CommentService {
 	constructor(
 		@InjectModel('Comment') private readonly commentModel: Model<Comment>,
+		@InjectModel('Tour') private readonly tourModel: Model<Tour>,
+		@InjectModel('BoardArticle') private readonly boardArticleModel: Model<BoardArticle>,
+		@InjectModel('Member') private readonly memberModel: Model<Member>,
 		private memberService: MemberService,
 		private tourService: TourService,
 		private boardArticleService: BoardArticleService,
 		private likeService: LikeService,
-		private destinationService: DestinationService,
 		private notificationService: NotificationService,
 	) {}
 
 	public async createComment(memberId: ObjectId, input: CommentInput): Promise<Comment> {
+		await this.validateCommentTarget(input);
 		input.memberId = memberId;
-		this.validateCommentReview(input);
 
 		let result: Comment | null = null;
 		try {
@@ -40,41 +47,30 @@ export class CommentService {
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 
-		if (!input.parentCommentId) {
-			switch (input.commentGroup) {
-				case CommentGroup.TOUR:
-					await this.tourService.tourStatsEditor({
-						_id: input.commentRefId,
-						targetKey: 'tourComments',
-						modifier: 1,
-					});
-					break;
+		switch (input.commentGroup) {
+			case CommentGroup.TOUR:
+				await this.tourService.tourStatsEditor({
+					_id: input.commentRefId,
+					targetKey: 'tourComments',
+					modifier: 1,
+				});
+				break;
 
-				case CommentGroup.ARTICLE:
-					await this.boardArticleService.boardArticleStatsEditor({
-						_id: input.commentRefId,
-						targetKey: 'articleComments',
-						modifier: 1,
-					});
-					break;
+			case CommentGroup.ARTICLE:
+				await this.boardArticleService.boardArticleStatsEditor({
+					_id: input.commentRefId,
+					targetKey: 'articleComments',
+					modifier: 1,
+				});
+				break;
 
-				case CommentGroup.MEMBER:
-					await this.memberService.memberStatsEditor({
-						_id: input.commentRefId,
-						targetKey: 'memberComments',
-						modifier: 1,
-					});
-					break;
-
-				case CommentGroup.DESTINATION:
-					await this.destinationService.destinationStatsEditor({
-						_id: input.commentRefId,
-						targetKey: 'destinationComments',
-						modifier: 1,
-					});
-					if (input.rating !== undefined) await this.recalculateDestinationRating(input.commentRefId);
-					break;
-			}
+			case CommentGroup.MEMBER:
+				await this.memberService.memberStatsEditor({
+					_id: input.commentRefId,
+					targetKey: 'memberComments',
+					modifier: 1,
+				});
+				break;
 		}
 
 		if (!result) throw new InternalServerErrorException(Message.CREATE_FAILED);
@@ -99,24 +95,12 @@ export class CommentService {
 			.exec();
 
 		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
-		if (
-			input.rating !== undefined &&
-			result.commentGroup === CommentGroup.DESTINATION &&
-			!result.parentCommentId
-		) {
-			await this.recalculateDestinationRating(result.commentRefId);
-		}
 		return result;
 	}
 
 	public async getComments(memberId: ObjectId, input: CommentsInquiry): Promise<Comments> {
-		const { commentGroup, commentRefId, parentCommentId } = input.search;
+		const { commentGroup, commentRefId } = input.search;
 		const match: T = { commentGroup, commentRefId, commentStatus: CommentStatus.ACTIVE };
-		if (parentCommentId) {
-			match.parentCommentId = parentCommentId;
-		} else {
-			match.$or = [{ parentCommentId: { $exists: false } }, { parentCommentId: null }];
-		}
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
 		const result: Comments[] = await this.commentModel
@@ -128,7 +112,6 @@ export class CommentService {
 						list: [
 							{ $skip: (input.page - 1) * input.limit },
 							{ $limit: input.limit },
-							// meLiked
 							lookupMember,
 							{ $unwind: '$memberData' },
 						],
@@ -158,76 +141,68 @@ export class CommentService {
 			likeGroup: LikeGroup.COMMENT,
 		});
 
-		const result = await this.commentStatsEditor({
-			_id: likeRefId,
-			targetKey: 'commentLikes',
-			modifier,
-		});
 		if (modifier === 1) {
 			await this.notificationService.notifyLikeCreated(memberId, targetComment.memberId, LikeGroup.COMMENT, likeRefId);
 		}
 
-		return result;
-	}
-
-	public async commentStatsEditor(input: StatisticModifier): Promise<Comment> {
-		const { _id, targetKey, modifier } = input;
-		const result = await this.commentModel
-			.findOneAndUpdate(
-				{
-					_id,
-					commentStatus: CommentStatus.ACTIVE,
-				},
-				{ $inc: { [targetKey]: modifier } },
-				{ new: true },
-			)
-			.exec();
-		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
-		return result;
+		return targetComment;
 	}
 
 	public async removeCommentByAdmin(input: ObjectId): Promise<Comment> {
-		const target = await this.commentModel.findById(input).exec();
 		const result = await this.commentModel.findByIdAndDelete(input).exec();
 		if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
 
-		if (
-			target?.commentGroup === CommentGroup.DESTINATION &&
-			!target.parentCommentId &&
-			target.rating !== undefined
-		) {
-			await this.recalculateDestinationRating(target.commentRefId);
+		// Keep the target's comment counter in sync when a comment is hard-deleted.
+		switch (result.commentGroup) {
+			case CommentGroup.TOUR:
+				await this.tourService.tourStatsEditor({ _id: result.commentRefId, targetKey: 'tourComments', modifier: -1 });
+				break;
+			case CommentGroup.ARTICLE:
+				await this.boardArticleService.boardArticleStatsEditor({
+					_id: result.commentRefId,
+					targetKey: 'articleComments',
+					modifier: -1,
+				});
+				break;
+			case CommentGroup.MEMBER:
+				await this.memberService.memberStatsEditor({
+					_id: result.commentRefId,
+					targetKey: 'memberComments',
+					modifier: -1,
+				});
+				break;
 		}
+
 		return result;
 	}
 
-	private validateCommentReview(input: CommentInput): void {
-		if (input.rating !== undefined && (input.rating < 1 || input.rating > 5)) {
-			throw new BadRequestException(Message.BAD_REQUEST);
+	// Reject comments whose target does not exist (or is not active), so we never
+	// create an orphan comment or bump a counter for a missing tour/article/member.
+	private async validateCommentTarget(input: CommentInput): Promise<void> {
+		switch (input.commentGroup) {
+			case CommentGroup.TOUR: {
+				const tour = await this.tourModel
+					.findOne({ _id: input.commentRefId, tourStatus: TourStatus.ACTIVE })
+					.exec();
+				if (!tour) throw new BadRequestException(Message.NO_DATA_FOUND);
+				break;
+			}
+			case CommentGroup.ARTICLE: {
+				const article = await this.boardArticleModel
+					.findOne({ _id: input.commentRefId, articleStatus: BoardArticleStatus.ACTIVE })
+					.exec();
+				if (!article) throw new BadRequestException(Message.NO_DATA_FOUND);
+				break;
+			}
+			case CommentGroup.MEMBER: {
+				const member = await this.memberModel
+					.findOne({ _id: input.commentRefId, memberStatus: MemberStatus.ACTIVE })
+					.exec();
+				if (!member) throw new BadRequestException(Message.NO_DATA_FOUND);
+				break;
+			}
+			default:
+				throw new BadRequestException(Message.BAD_REQUEST);
 		}
-
-		if (input.commentGroup === CommentGroup.TOUR && !input.parentCommentId && input.rating === undefined) {
-			throw new BadRequestException(Message.BAD_REQUEST);
-		}
-	}
-
-	private async recalculateDestinationRating(destinationId: ObjectId): Promise<void> {
-		const result = await this.commentModel
-			.aggregate([
-				{
-					$match: {
-						commentGroup: CommentGroup.DESTINATION,
-						commentRefId: destinationId,
-						commentStatus: CommentStatus.ACTIVE,
-						rating: { $gte: 1, $lte: 5 },
-						$or: [{ parentCommentId: { $exists: false } }, { parentCommentId: null }],
-					},
-				},
-				{ $group: { _id: '$commentRefId', averageRating: { $avg: '$rating' } } },
-			])
-			.exec();
-
-		const destinationRating = result.length ? Math.round(result[0].averageRating * 10) / 10 : 0;
-		await this.destinationService.updateDestinationRating(destinationId, destinationRating);
 	}
 }

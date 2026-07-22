@@ -14,8 +14,8 @@ import type { ObjectId } from 'mongoose';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { MemberType } from '../../libs/enums/member.enum';
-import { AgentRequestReviewInput, MemberUpdate } from '../../libs/dto/member/member.update';
-import { getSerialForImage, shapeIntoMongoObjectId, validMimeTypes } from '../../libs/config';
+import { MemberUpdate } from '../../libs/dto/member/member.update';
+import { getSerialForImage, shapeIntoMongoObjectId, validImageTargets, validMimeTypes } from '../../libs/config';
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
 import { createWriteStream } from 'fs';
@@ -109,14 +109,6 @@ export class MemberResolver {
 		return await this.memberService.getAllMembersByAdmin(input);
 	}
 
-	@Roles(MemberType.ADMIN)
-	@UseGuards(RolesGuard)
-	@Query(() => Members)
-	public async getAgentRequestsByAdmin(@Args('input') input: MembersInquiry): Promise<Members> {
-		console.log('Query: getAgentRequestsByAdmin');
-		return await this.memberService.getAgentRequestsByAdmin(input);
-	}
-
 	// Authorization: ADMIN
 	@Roles(MemberType.ADMIN)
 	@UseGuards(RolesGuard)
@@ -124,15 +116,6 @@ export class MemberResolver {
 	public async updateMemberByAdmin(@Args('input') input: MemberUpdate): Promise<Member> {
 		console.log('Mutation: updateMemberByAdmin');
 		return await this.memberService.updateMemberByAdmin(input);
-	}
-
-	@Roles(MemberType.ADMIN)
-	@UseGuards(RolesGuard)
-	@Mutation(() => Member)
-	public async reviewAgentRequestByAdmin(@Args('input') input: AgentRequestReviewInput): Promise<Member> {
-		console.log('Mutation: reviewAgentRequestByAdmin');
-		input.memberId = shapeIntoMongoObjectId(input.memberId);
-		return await this.memberService.reviewAgentRequestByAdmin(input);
 	}
 
 	/** UPLOADER **/
@@ -149,8 +132,9 @@ export class MemberResolver {
 		if (!filename) throw new BadRequestException(Message.UPLOAD_FAILED);
 		const validMime = validMimeTypes.includes(mimetype);
 		if (!validMime) throw new UnsupportedMediaTypeException(Message.PROVIDE_ALLOWED_FORMAT);
+		if (!validImageTargets.includes(String(target))) throw new BadRequestException(Message.UPLOAD_FAILED);
 
-		const imageName = getSerialForImage(filename);
+		const imageName = getSerialForImage(mimetype);
 		const url = `uploads/${target}/${imageName}`;
 		const stream = createReadStream();
 
@@ -174,6 +158,8 @@ export class MemberResolver {
 	): Promise<string[]> {
 		console.log('Mutation: imagesUploader');
 
+		if (!validImageTargets.includes(String(target))) throw new BadRequestException(Message.UPLOAD_FAILED);
+
 		const uploadedImages: string[] = []; // : string[]
 		const promisedList = files.map(async (img: Promise<FileUpload>, index: number): Promise<Promise<void>> => {
 			try {
@@ -182,7 +168,7 @@ export class MemberResolver {
 				const validMime = validMimeTypes.includes(mimetype);
 				if (!validMime) throw new UnsupportedMediaTypeException(Message.PROVIDE_ALLOWED_FORMAT);
 
-				const imageName = getSerialForImage(filename);
+				const imageName = getSerialForImage(mimetype);
 				const url = `uploads/${target}/${imageName}`;
 				const stream = createReadStream();
 

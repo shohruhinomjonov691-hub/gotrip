@@ -6,44 +6,37 @@ export const availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'm
 export const availableTourSorts = ['createdAt', 'updatedAt', 'tourLikes', 'tourViews', 'tourRank', 'tourPrice'];
 export const availableBoardArticleSorts = ['createdAt', 'updatedAt', 'articleLikes', 'articleViews'];
 export const availableCommentSorts = ['createdAt', 'updatedAt'];
-export const availableDestinationSorts = [
-	'createdAt',
-	'updatedAt',
-	'destinationViews',
-	'destinationLikes',
-	'destinationRank',
-	'destinationRating',
-	'destinationTours',
-];
-export const availableTourScheduleSorts = [
-	'createdAt',
-	'updatedAt',
-	'startDate',
-	'endDate',
-	'availableSeats',
-	'reservedSeats',
-	'price',
-];
-export const availableBookingSorts = ['createdAt', 'updatedAt', 'bookingDate', 'totalPrice', 'peopleCount'];
-export const availablePaymentSorts = ['createdAt', 'updatedAt', 'paymentAmount', 'paidAt', 'refundedAt'];
-export const availableWishlistSorts = ['createdAt', 'updatedAt'];
 export const availableNotificationSorts = ['createdAt', 'updatedAt'];
 export const availableNoticeSorts = ['createdAt', 'updatedAt'];
 
 /** IMAGE CONFIGURATION **/
 import { v4 as uuidv4 } from 'uuid';
-import * as path from 'path';
 import { T } from './types/common';
 
 export const validMimeTypes = ['image/png', 'image/jpg', 'image/jpeg'];
-export const getSerialForImage = (filename: string) => {
-	const ext = path.parse(filename).ext;
+
+// Only these subfolders may receive uploads. Prevents path traversal via `target`.
+export const validImageTargets = ['member', 'tour', 'article'];
+
+// Derive the extension from the trusted mimetype, never from the client filename.
+const mimeToExtension: Record<string, string> = {
+	'image/png': '.png',
+	'image/jpg': '.jpg',
+	'image/jpeg': '.jpg',
+};
+
+export const getSerialForImage = (mimetype: string) => {
+	const ext = mimeToExtension[mimetype] ?? '.png';
 	return uuidv4() + ext;
 };
 
 export const shapeIntoMongoObjectId = (target: any) => {
 	return typeof target === 'string' ? new ObjectId(target) : target;
 };
+
+// Escape user-provided text before using it inside a RegExp, so special characters
+// are matched literally instead of being interpreted (prevents regex injection / ReDoS).
+export const escapeRegex = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const lookupAuthMemberLiked = (
 	memberId: T,

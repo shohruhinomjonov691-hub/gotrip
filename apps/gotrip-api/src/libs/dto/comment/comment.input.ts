@@ -20,16 +20,6 @@ export class CommentInput {
 	@Field(() => String)
 	commentRefId: mongoose.ObjectId;
 
-	@IsOptional()
-	@Min(1)
-	@Max(5)
-	@Field(() => Int, { nullable: true })
-	rating?: number;
-
-	@IsOptional()
-	@Field(() => String, { nullable: true })
-	parentCommentId?: mongoose.ObjectId;
-
 	memberId?: mongoose.ObjectId;
 }
 
@@ -42,10 +32,6 @@ class CISearch {
 	@IsNotEmpty()
 	@Field(() => String)
 	commentRefId: mongoose.ObjectId;
-
-	@IsOptional()
-	@Field(() => String, { nullable: true })
-	parentCommentId?: mongoose.ObjectId;
 }
 
 @InputType()
@@ -57,6 +43,7 @@ export class CommentsInquiry {
 
 	@IsNotEmpty()
 	@Min(1)
+	@Max(100)
 	@Field(() => Int)
 	limit: number;
 

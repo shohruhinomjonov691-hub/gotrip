@@ -7,11 +7,6 @@ import { LikeModule } from './like/like.module';
 import { ViewModule } from './view/view.module';
 import { FollowModule } from './follow/follow.module';
 import { BoardArticleModule } from './board-article/board-article.module';
-import { DestinationModule } from './destination/destination.module';
-import { TourScheduleModule } from './tour-schedule/tour-schedule.module';
-import { BookingModule } from './booking/booking.module';
-import { WishlistModule } from './wishlist/wishlist.module';
-import { PaymentModule } from './payment/payment.module';
 import { NotificationModule } from './notification/notification.module';
 import { NoticeModule } from './notice/notice.module';
 
@@ -25,11 +20,6 @@ import { NoticeModule } from './notice/notice.module';
 		ViewModule,
 		CommentModule,
 		FollowModule,
-		DestinationModule,
-		TourScheduleModule,
-		BookingModule,
-		WishlistModule,
-		PaymentModule,
 		NotificationModule,
 		NoticeModule,
 	],

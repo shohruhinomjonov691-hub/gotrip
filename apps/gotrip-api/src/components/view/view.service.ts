@@ -7,6 +7,7 @@ import { T } from '../../libs/types/common';
 import { OrdinaryInquiry } from '../../libs/dto/tour/tour.input';
 import { Tours } from '../../libs/dto/tour/tour';
 import { ViewGroup } from '../../libs/enums/view.enum';
+import { TourStatus } from '../../libs/enums/tour.enum';
 import { lookupVisit } from '../../libs/config';
 
 @Injectable()
@@ -45,6 +46,7 @@ export class ViewService {
 					},
 				},
 				{ $unwind: '$visitedTour' },
+				{ $match: { 'visitedTour.tourStatus': { $ne: TourStatus.DELETED } } },
 				{
 					$facet: {
 						list: [

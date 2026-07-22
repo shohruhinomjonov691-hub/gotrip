@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsIn, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, Length, Max, Min } from 'class-validator';
 import { availableNoticeSorts } from '../../config';
 import { Direction } from '../../enums/common.enum';
 import { NoticeCategory, NoticeStatus } from '../../enums/notice.enum';
@@ -45,6 +45,7 @@ export class NoticesInquiry {
 
 	@IsNotEmpty()
 	@Min(1)
+	@Max(100)
 	@Field(() => Int)
 	limit: number;
 
@@ -78,6 +79,7 @@ export class AllNoticesInquiry {
 
 	@IsNotEmpty()
 	@Min(1)
+	@Max(100)
 	@Field(() => Int)
 	limit: number;
 

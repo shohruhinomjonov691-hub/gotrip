@@ -1,5 +1,5 @@
 import { Schema } from 'mongoose';
-import { AgentRequestStatus, MemberAuthType, MemberStatus, MemberType } from '../libs/enums/member.enum';
+import { MemberAuthType, MemberStatus, MemberType } from '../libs/enums/member.enum';
 
 const MemberSchema = new Schema(
 	{
@@ -109,33 +109,6 @@ const MemberSchema = new Schema(
 		memberBlocks: {
 			type: Number,
 			default: 0,
-		},
-
-		agentRequestStatus: {
-			type: String,
-			enum: AgentRequestStatus,
-			default: AgentRequestStatus.NONE,
-		},
-
-		agentRequestMessage: {
-			type: String,
-		},
-
-		agentExperience: {
-			type: String,
-		},
-
-		agentApprovedAt: {
-			type: Date,
-		},
-
-		agentRejectedAt: {
-			type: Date,
-		},
-
-		isVerifiedAgent: {
-			type: Boolean,
-			default: false,
 		},
 
 		deletedAt: {

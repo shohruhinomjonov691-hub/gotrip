@@ -16,8 +16,6 @@ describe('NotificationService social helpers', () => {
 			{} as any,
 			{} as any,
 			{} as any,
-			{} as any,
-			{} as any,
 			memberModel as any,
 		);
 	});
@@ -38,21 +36,8 @@ describe('NotificationService social helpers', () => {
 			notificationDesc: 'A member started following you.',
 			authorId: followerId,
 			receiverId: followingId,
-			memberId: followingId,
 			notificationStatus: NotificationStatus.WAIT,
 		});
-	});
-
-	it('skips unsupported destination like notifications', async () => {
-		const result = await service.notifyLikeCreated(
-			new Types.ObjectId() as any,
-			new Types.ObjectId() as any,
-			LikeGroup.DESTINATION,
-			new Types.ObjectId() as any,
-		);
-
-		expect(result).toBeNull();
-		expect(notificationModel.create).not.toHaveBeenCalled();
 	});
 
 	it('skips self like notifications', async () => {
@@ -90,7 +75,6 @@ describe('NotificationService social helpers', () => {
 				notificationTitle: 'Platform update',
 				notificationDesc: 'A'.repeat(500),
 				receiverId: firstMemberId,
-				memberId: firstMemberId,
 			},
 			{
 				notificationType: NotificationType.ADMIN_NOTICE,
@@ -99,7 +83,6 @@ describe('NotificationService social helpers', () => {
 				notificationTitle: 'Platform update',
 				notificationDesc: 'A'.repeat(500),
 				receiverId: secondMemberId,
-				memberId: secondMemberId,
 			},
 		]);
 	});

@@ -27,6 +27,7 @@ export class TourUpdate {
 	tourTitle?: string;
 
 	@IsOptional()
+	@Min(1)
 	@Field(() => Number, { nullable: true })
 	tourPrice?: number;
 
@@ -86,10 +87,6 @@ export class TourUpdate {
 	@IsOptional()
 	@Field(() => TourDifficulty, { nullable: true })
 	tourDifficulty?: TourDifficulty;
-
-	@IsOptional()
-	@Field(() => String, { nullable: true })
-	destinationId?: mongoose.ObjectId;
 
 	deletedAt?: Date;
 }

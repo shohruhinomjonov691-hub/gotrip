@@ -1,6 +1,6 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { IsNotEmpty, IsOptional, Length } from 'class-validator';
-import { AgentRequestStatus, MemberStatus, MemberType } from '../../enums/member.enum';
+import { MemberStatus, MemberType } from '../../enums/member.enum';
 import * as mongoose from 'mongoose';
 
 @InputType()
@@ -27,7 +27,7 @@ export class MemberUpdate {
 	memberNick?: string;
 
 	@IsOptional()
-	@Length(5, 12)
+	@Length(5, 30)
 	@Field(() => String, { nullable: true })
 	memberPassword?: string;
 
@@ -49,20 +49,4 @@ export class MemberUpdate {
 	memberDesc?: string;
 
 	deletedAt?: Date;
-}
-
-@InputType()
-export class AgentRequestReviewInput {
-	@IsNotEmpty()
-	@Field(() => String)
-	memberId: mongoose.ObjectId;
-
-	@IsNotEmpty()
-	@Field(() => AgentRequestStatus)
-	agentRequestStatus: AgentRequestStatus;
-
-	@IsOptional()
-	@Length(1, 500)
-	@Field(() => String, { nullable: true })
-	agentRequestMessage?: string;
 }

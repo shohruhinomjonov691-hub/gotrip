@@ -4,7 +4,7 @@
 
 Migrate the Next.js frontend from the old real-estate Nestar experience to the current GoTrip travel booking experience. The backend now exposes tour-based GoTrip GraphQL APIs.
 
-The frontend should consume the current tour, destination, schedule, booking, payment, wishlist, notification, notice, and article APIs directly.
+The frontend should consume the current tour, member, social, notification, notice, and article APIs directly.
 
 ## Step-By-Step Plan
 
@@ -30,7 +30,7 @@ The frontend should consume the current tour, destination, schedule, booking, pa
 | Create property page/form | Create tour page/form for operators | `createTour` |
 | Update property page/form | Update tour page/form for operators | `updateTour` |
 | Agent listing/profile | Guide/operator listing/profile | `getAgents`, `getMember` |
-| Favorite properties | Saved tours | `toggleWishlist`, `getMyWishlist`, `checkWishlist` |
+| Favorite properties | Saved tours | `likeTargetTour`, `getFavoriteTours` |
 | Visited properties | Recently viewed tours | `getVisited` |
 | Board articles | Travel community/articles | `getBoardArticles`, `getBoardArticle` |
 | Notices | Notices/help content | `getNotices`, `getNotice` |
@@ -49,8 +49,8 @@ Use current backend operations directly.
 | `useTour` | `getTour` |
 | `createTour` | `createTour` |
 | `updateTour` | `updateTour` |
-| `saveTour` | `toggleWishlist` / `checkWishlist` |
-| `useSavedTours` | `getMyWishlist` |
+| `saveTour` | `likeTargetTour` |
+| `useSavedTours` | `getFavoriteTours` |
 | `useVisitedTours` | `getVisited` |
 | `useGuides` | `getAgents` |
 | `useNotices` | `getNotices` |
@@ -74,7 +74,7 @@ Create a frontend data layer around current GoTrip fields and UI concepts.
 
 ### Phase 3: Remaining Integration Areas
 
-Connect destination, schedule, booking, payment, wishlist, notification, notice, and admin approval screens to the current backend operations.
+Connect notification, notice, and admin approval screens to the current backend operations.
 
 ## UI Terminology Changes
 

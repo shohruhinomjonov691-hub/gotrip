@@ -16,11 +16,10 @@ import { TourStatus } from '../../libs/enums/tour.enum';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { ViewService } from '../view/view.service';
 import { TourUpdate } from '../../libs/dto/tour/tour.update';
-import { lookupAuthMemberLiked, lookupMember, shapeIntoMongoObjectId } from '../../libs/config';
+import { escapeRegex, lookupAuthMemberLiked, lookupMember, shapeIntoMongoObjectId } from '../../libs/config';
 import { LikeService } from '../like/like.service';
 import { LikeInput } from '../../libs/dto/like/like.input';
 import { LikeGroup } from '../../libs/enums/like.enum';
-import { TourScheduleService } from '../tour-schedule/tour-schedule.service';
 import { MemberType } from '../../libs/enums/member.enum';
 import { NotificationService } from '../notification/notification.service';
 
@@ -31,14 +30,24 @@ export class TourService {
 		private memberService: MemberService,
 		private viewService: ViewService,
 		private likeService: LikeService,
-		private tourScheduleService: TourScheduleService,
 		private notificationService: NotificationService,
 	) {}
+
+	// A tour still occupies a listing slot while ACTIVE or PAUSED; SOLD_OUT and
+	// DELETED release it. `memberTours` counts the listed ones.
+	private static readonly LISTED_TOUR_STATUSES = [TourStatus.ACTIVE, TourStatus.PAUSED];
 
 	public async createTour(memberId: ObjectId, input: TourInput): Promise<Tour> {
 		const authMember = await this.memberService.getMember(null, memberId);
 		if (authMember.memberType !== MemberType.AGENT) {
 			throw new ForbiddenException(Message.ONLY_SPECIFIC_ROLES_ALLOWED);
+		}
+
+		if (input.tourMinPeople > input.tourMaxPeople) {
+			throw new BadRequestException('tourMinPeople cannot exceed tourMaxPeople.');
+		}
+		if (input.tourAvailableSeats > input.tourMaxPeople) {
+			throw new BadRequestException('tourAvailableSeats cannot exceed tourMaxPeople.');
 		}
 
 		input.memberId = memberId;
@@ -80,36 +89,41 @@ export class TourService {
 		}
 
 		targetTour.memberData = await this.memberService.getMember(null, targetTour.memberId);
-		targetTour.schedules = await this.tourScheduleService.getActiveSchedulesByTour(tourId);
 		return targetTour;
 	}
 
 	public async updateTour(memberId: ObjectId, input: TourUpdate): Promise<Tour> {
 		const { tourStatus } = input;
+		// Allow editing any tour the agent owns that has not been deleted, so PAUSED
+		// or SOLD_OUT tours can be edited and re-activated.
 		const search: T = {
 			_id: input._id,
 			memberId: memberId,
-			tourStatus: TourStatus.ACTIVE,
+			tourStatus: { $ne: TourStatus.DELETED },
 		};
 
 		if (tourStatus === TourStatus.DELETED) input.deletedAt = new Date();
 
-		const result = await this.tourModel
-			.findOneAndUpdate(search, input, {
-				new: true,
-			})
-			.exec();
+		const current = await this.tourModel.findOne(search).exec();
+		if (!current) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+
+		const result = await this.tourModel.findOneAndUpdate(search, input, { new: true }).exec();
 		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 
-		if (tourStatus === TourStatus.SOLD_OUT || tourStatus === TourStatus.DELETED) {
-			await this.memberService.memberStatsEditor({
-				_id: memberId,
-				targetKey: 'memberTours',
-				modifier: -1,
-			});
+		const modifier = this.resolveMemberToursModifier(current.tourStatus, result.tourStatus);
+		if (modifier !== 0) {
+			await this.memberService.memberStatsEditor({ _id: result.memberId, targetKey: 'memberTours', modifier });
 		}
 
 		return result;
+	}
+
+	private resolveMemberToursModifier(oldStatus: TourStatus, newStatus: TourStatus): number {
+		const wasListed = TourService.LISTED_TOUR_STATUSES.includes(oldStatus);
+		const isListed = TourService.LISTED_TOUR_STATUSES.includes(newStatus);
+		if (wasListed && !isListed) return -1;
+		if (!wasListed && isListed) return 1;
+		return 0;
 	}
 
 	public async getTours(memberId: ObjectId, input: ToursInquiry): Promise<Tours> {
@@ -143,10 +157,8 @@ export class TourService {
 	}
 
 	private shapeMatchQuery(match: T, input: ToursInquiry): void {
-		const { memberId, destinationId, locationList, categoryList, periodsRange, pricesRange, durationRange, text } =
-			input.search;
+		const { memberId, locationList, categoryList, periodsRange, pricesRange, durationRange, text } = input.search;
 		if (memberId) match.memberId = shapeIntoMongoObjectId(memberId);
-		if (destinationId) match.destinationId = shapeIntoMongoObjectId(destinationId);
 		if (locationList && locationList.length) match.tourLocation = { $in: locationList };
 		if (categoryList && categoryList.length) match.tourCategory = { $in: categoryList };
 
@@ -154,11 +166,10 @@ export class TourService {
 		if (periodsRange) match.createdAt = { $gte: periodsRange.start, $lte: periodsRange.end };
 		if (durationRange) match.tourDuration = { $gte: durationRange.start, $lte: durationRange.end };
 
-		if (text) match.tourTitle = { $regex: new RegExp(text, 'i') };
+		if (text) match.tourTitle = { $regex: new RegExp(escapeRegex(text), 'i') };
 	}
 
 	public async getFavorites(memberId: ObjectId, input: OrdinaryInquiry): Promise<Tours> {
-		// Legacy like-based favorites. Saved-tour UX should use Wishlist APIs instead.
 		return await this.likeService.getFavoriteTours(memberId, input);
 	}
 
@@ -256,24 +267,20 @@ export class TourService {
 		const { tourStatus } = input;
 		const search: T = {
 			_id: input._id,
-			tourStatus: TourStatus.ACTIVE,
+			tourStatus: { $ne: TourStatus.DELETED },
 		};
 
 		if (tourStatus === TourStatus.DELETED) input.deletedAt = new Date();
 
-		const result = await this.tourModel
-			.findOneAndUpdate(search, input, {
-				new: true,
-			})
-			.exec();
+		const current = await this.tourModel.findOne(search).exec();
+		if (!current) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+
+		const result = await this.tourModel.findOneAndUpdate(search, input, { new: true }).exec();
 		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 
-		if (tourStatus === TourStatus.SOLD_OUT || tourStatus === TourStatus.DELETED) {
-			await this.memberService.memberStatsEditor({
-				_id: result.memberId,
-				targetKey: 'memberTours',
-				modifier: -1,
-			});
+		const modifier = this.resolveMemberToursModifier(current.tourStatus, result.tourStatus);
+		if (modifier !== 0) {
+			await this.memberService.memberStatsEditor({ _id: result.memberId, targetKey: 'memberTours', modifier });
 		}
 
 		return result;

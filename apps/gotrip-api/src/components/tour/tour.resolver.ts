@@ -31,7 +31,6 @@ export class TourResolver {
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Tour> {
 		console.log('Mutation: createTour');
-		if (input.destinationId) input.destinationId = shapeIntoMongoObjectId(input.destinationId);
 		return await this.tourService.createTour(memberId, input);
 	}
 
@@ -55,7 +54,6 @@ export class TourResolver {
 	): Promise<Tour> {
 		console.log('Mutation: updateTour');
 		input._id = shapeIntoMongoObjectId(input._id);
-		if (input.destinationId) input.destinationId = shapeIntoMongoObjectId(input.destinationId);
 		return await this.tourService.updateTour(memberId, input);
 	}
 

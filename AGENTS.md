@@ -30,7 +30,8 @@ Use those files as the source of truth for AI Agent related migration history, a
 - Tour enum values are:
   - `tourCategory`: `ADVENTURE`, `CULTURAL`, `HISTORICAL`, `BEACH`, `MOUNTAIN`, `CITY`, `CRUISE`
   - `tourStatus`: `ACTIVE`, `SOLD_OUT`, `PAUSED`, `DELETED`
-  - `bookingStatus`: `PENDING`, `CONFIRMED`, `CANCELLED`, `COMPLETED`
+- Booking, payment, wishlist, destination, and tour-schedule modules are out of scope. Do not reintroduce them without an explicit decision.
+- Saved tours use likes (`likeTargetTour`, `getFavoriteTours`), not a wishlist module.
 
 ## Workflow
 

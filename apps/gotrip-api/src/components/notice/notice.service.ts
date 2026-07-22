@@ -7,6 +7,7 @@ import { NoticeUpdate } from '../../libs/dto/notice/notice.update';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { NoticeStatus } from '../../libs/enums/notice.enum';
 import { T } from '../../libs/types/common';
+import { escapeRegex } from '../../libs/config';
 import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
@@ -110,9 +111,10 @@ export class NoticeService {
 	private shapeNoticeMatchQuery(match: T, search: T): void {
 		if (search.noticeCategory) match.noticeCategory = search.noticeCategory;
 		if (search.text) {
+			const safeText = escapeRegex(search.text);
 			match.$or = [
-				{ noticeTitle: { $regex: new RegExp(search.text, 'i') } },
-				{ noticeContent: { $regex: new RegExp(search.text, 'i') } },
+				{ noticeTitle: { $regex: new RegExp(safeText, 'i') } },
+				{ noticeContent: { $regex: new RegExp(safeText, 'i') } },
 			];
 		}
 	}

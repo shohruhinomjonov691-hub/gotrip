@@ -7,18 +7,35 @@ import { Member } from '../libs/dto/member/member';
 import * as url from 'url';
 import { Message } from '../libs/enums/common.enum';
 
+// Only non-sensitive fields are ever sent to connected clients. The full Member
+// (phone, address, role, warnings, ...) must never leave the server over the socket.
+interface PublicMember {
+	_id: unknown;
+	memberNick: string;
+	memberImage: string;
+}
+
 interface MessagePayload {
 	event: string;
 	text: string;
-	memberData: Member | null | undefined;
+	memberData: PublicMember | null;
 }
 
 interface InfoPayload {
 	event: string;
 	totalClients: number;
-	memberData: Member | null | undefined;
+	memberData: PublicMember | null;
 	action: string;
 }
+
+const toPublicMember = (member: Member | null | undefined): PublicMember | null => {
+	if (!member) return null;
+	return {
+		_id: member._id,
+		memberNick: member.memberNick,
+		memberImage: member.memberImage,
+	};
+};
 
 @WebSocketGateway({ transports: ['websocket'], secure: false })
 export class SocketGateway implements OnGatewayInit {
@@ -57,7 +74,7 @@ export class SocketGateway implements OnGatewayInit {
 		const infoMsg: InfoPayload = {
 			event: 'info',
 			totalClients: this.summaryClient,
-			memberData: authMember,
+			memberData: toPublicMember(authMember),
 			action: 'joined',
 		};
 		this.emitMessage(infoMsg);
@@ -75,7 +92,7 @@ export class SocketGateway implements OnGatewayInit {
 		const infoMsg: InfoPayload = {
 			event: 'info',
 			totalClients: this.summaryClient,
-			memberData: authMember,
+			memberData: toPublicMember(authMember),
 			action: 'left',
 		};
 		this.broadcastMessage(client, infoMsg);
@@ -84,7 +101,7 @@ export class SocketGateway implements OnGatewayInit {
 	@SubscribeMessage('message')
 	public async handleMessage(client: WebSocket, payload: string): Promise<void> {
 		const authMember = this.clientsAuthMap.get(client);
-		const newMessage: MessagePayload = { event: 'message', text: payload, memberData: authMember };
+		const newMessage: MessagePayload = { event: 'message', text: payload, memberData: toPublicMember(authMember) };
 
 		const clientNick: string = authMember?.memberNick ?? 'Guest';
 		this.logger.verbose(`NEW MESSAGE [${clientNick}]: ${payload}`);

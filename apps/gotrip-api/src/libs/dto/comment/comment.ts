@@ -1,4 +1,4 @@
-import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { Field, ObjectType } from '@nestjs/graphql';
 import * as mongoose from 'mongoose';
 import { CommentGroup, CommentStatus } from '../../enums/comment.enum';
 import { Member, TotalCounter } from '../member/member';
@@ -22,15 +22,6 @@ export class Comment {
 
 	@Field(() => String)
 	memberId: mongoose.ObjectId;
-
-	@Field(() => Int, { nullable: true })
-	rating?: number;
-
-	@Field(() => Int, { nullable: true })
-	commentLikes?: number;
-
-	@Field(() => String, { nullable: true })
-	parentCommentId?: mongoose.ObjectId;
 
 	@Field(() => Date)
 	createdAt: Date;

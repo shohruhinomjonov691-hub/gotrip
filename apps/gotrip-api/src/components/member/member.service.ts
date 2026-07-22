@@ -3,10 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
 import { Member, Members } from '../../libs/dto/member/member';
 import { AgentsInquiry, LoginInput, MemberInput, MembersInquiry } from '../../libs/dto/member/member.input';
-import { AgentRequestStatus, MemberStatus, MemberType } from '../../libs/enums/member.enum';
+import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { AuthService } from '../auth/auth.service';
-import { AgentRequestReviewInput, MemberUpdate } from '../../libs/dto/member/member.update';
+import { MemberUpdate } from '../../libs/dto/member/member.update';
 import { ViewService } from '../view/view.service';
 import { StatisticModifier, T } from '../../libs/types/common';
 import { ViewGroup } from '../../libs/enums/view.enum';
@@ -14,7 +14,7 @@ import { LikeService } from '../like/like.service';
 import { LikeInput } from '../../libs/dto/like/like.input';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { Follower, Following, MeFollowed } from '../../libs/dto/follow/follow';
-import { lookupAuthMemberLiked } from '../../libs/config';
+import { escapeRegex, lookupAuthMemberLiked } from '../../libs/config';
 import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
@@ -29,16 +29,13 @@ export class MemberService {
 	) {}
 
 	public async signup(input: MemberInput): Promise<Member> {
-		const wantsToBecomeAgent = Boolean(input.wantsToBecomeAgent || input.agentRequestMessage || input.agentExperience);
-		const { wantsToBecomeAgent: _wantsToBecomeAgent, memberType: _memberType, ...signupInput } = input;
+		const { memberType: _memberType, ...signupInput } = input;
 
 		signupInput.memberPassword = await this.authService.hashPassword(input.memberPassword);
 		try {
 			const result = await this.memberModel.create({
 				...signupInput,
 				memberType: MemberType.USER,
-				isVerifiedAgent: false,
-				agentRequestStatus: wantsToBecomeAgent ? AgentRequestStatus.PENDING : AgentRequestStatus.NONE,
 			});
 			result.accessToken = await this.authService.createToken(result);
 			return result;
@@ -127,7 +124,7 @@ export class MemberService {
 		const match: T = { memberType: MemberType.AGENT, memberStatus: MemberStatus.ACTIVE };
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-		if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
+		if (text) match.memberNick = { $regex: new RegExp(escapeRegex(text), 'i') };
 		console.log('match:', match);
 
 		const result = await this.memberModel
@@ -175,40 +172,13 @@ export class MemberService {
 	}
 
 	public async getAllMembersByAdmin(input: MembersInquiry): Promise<Members> {
-		const { agentRequestStatus, memberStatus, memberType, text } = input.search;
+		const { memberStatus, memberType, text } = input.search;
 		const match: T = {};
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-		if (agentRequestStatus) match.agentRequestStatus = agentRequestStatus;
 		if (memberStatus) match.memberStatus = memberStatus;
 		if (memberType) match.memberType = memberType;
-		if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
-		console.log('match:', match);
-
-		const result = await this.memberModel
-			.aggregate([
-				{ $match: match },
-				{ $sort: sort },
-				{
-					$facet: {
-						list: [{ $skip: (input.page - 1) * input.limit }, { $limit: input.limit }],
-						metaCounter: [{ $count: 'total' }],
-					},
-				},
-			])
-			.exec();
-		if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-
-		return result[0];
-	}
-
-	public async getAgentRequestsByAdmin(input: MembersInquiry): Promise<Members> {
-		const { agentRequestStatus, memberStatus, text } = input.search;
-		const match: T = { agentRequestStatus: agentRequestStatus ?? AgentRequestStatus.PENDING };
-		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
-
-		if (memberStatus) match.memberStatus = memberStatus;
-		if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
+		if (text) match.memberNick = { $regex: new RegExp(escapeRegex(text), 'i') };
 		console.log('match:', match);
 
 		const result = await this.memberModel
@@ -239,55 +209,6 @@ export class MemberService {
 			.findOneAndUpdate({ _id: input._id }, update, { new: true })
 			.exec();
 		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
-		return result;
-	}
-
-	public async reviewAgentRequestByAdmin(input: AgentRequestReviewInput): Promise<Member> {
-		const { agentRequestStatus, memberId } = input;
-		if (![AgentRequestStatus.APPROVED, AgentRequestStatus.REJECTED].includes(agentRequestStatus)) {
-			throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
-		}
-
-		const update: T =
-			agentRequestStatus === AgentRequestStatus.APPROVED
-				? {
-						memberType: MemberType.AGENT,
-						isVerifiedAgent: true,
-						agentRequestStatus: AgentRequestStatus.APPROVED,
-						agentRequestMessage: input.agentRequestMessage,
-						agentApprovedAt: new Date(),
-						agentRejectedAt: null,
-					}
-				: {
-						memberType: MemberType.USER,
-						isVerifiedAgent: false,
-						agentRequestStatus: AgentRequestStatus.REJECTED,
-						agentRequestMessage: input.agentRequestMessage,
-						agentRejectedAt: new Date(),
-						agentApprovedAt: null,
-					};
-
-		if (!input.agentRequestMessage) delete update.agentRequestMessage;
-
-		const result: Member | null = await this.memberModel
-			.findOneAndUpdate(
-				{
-					_id: memberId,
-					memberStatus: MemberStatus.ACTIVE,
-					agentRequestStatus: AgentRequestStatus.PENDING,
-				},
-				update,
-				{ new: true },
-			)
-			.exec();
-		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
-
-		if (agentRequestStatus === AgentRequestStatus.APPROVED) {
-			await this.notificationService.notifyAgentApproved(result._id);
-		} else {
-			await this.notificationService.notifyAgentRejected(result._id);
-		}
-
 		return result;
 	}
 

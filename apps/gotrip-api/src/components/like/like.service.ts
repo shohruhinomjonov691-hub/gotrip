@@ -8,6 +8,7 @@ import { Message } from '../../libs/enums/common.enum';
 import { OrdinaryInquiry } from '../../libs/dto/tour/tour.input';
 import { Tours } from '../../libs/dto/tour/tour';
 import { LikeGroup } from '../../libs/enums/like.enum';
+import { TourStatus } from '../../libs/enums/tour.enum';
 import { lookupFavorite } from '../../libs/config';
 
 @Injectable()
@@ -59,6 +60,7 @@ export class LikeService {
 					},
 				},
 				{ $unwind: '$favoriteTour' },
+				{ $match: { 'favoriteTour.tourStatus': { $ne: TourStatus.DELETED } } },
 				{
 					$facet: {
 						list: [

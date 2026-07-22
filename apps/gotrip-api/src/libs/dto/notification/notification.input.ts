@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsIn, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, Length, Max, Min } from 'class-validator';
 import * as mongoose from 'mongoose';
 import { availableNotificationSorts } from '../../config';
 import { Direction } from '../../enums/common.enum';
@@ -35,19 +35,7 @@ export class NotificationInput {
 
 	@IsOptional()
 	@Field(() => String, { nullable: true })
-	memberId?: mongoose.ObjectId;
-
-	@IsOptional()
-	@Field(() => String, { nullable: true })
 	tourId?: mongoose.ObjectId;
-
-	@IsOptional()
-	@Field(() => String, { nullable: true })
-	bookingId?: mongoose.ObjectId;
-
-	@IsOptional()
-	@Field(() => String, { nullable: true })
-	paymentId?: mongoose.ObjectId;
 
 	@IsOptional()
 	@Field(() => String, { nullable: true })
@@ -78,14 +66,6 @@ class NotificationSearch {
 
 	@IsOptional()
 	@Field(() => String, { nullable: true })
-	bookingId?: mongoose.ObjectId;
-
-	@IsOptional()
-	@Field(() => String, { nullable: true })
-	paymentId?: mongoose.ObjectId;
-
-	@IsOptional()
-	@Field(() => String, { nullable: true })
 	articleId?: mongoose.ObjectId;
 
 	@IsOptional()
@@ -110,6 +90,7 @@ export class NotificationsInquiry {
 
 	@IsNotEmpty()
 	@Min(1)
+	@Max(100)
 	@Field(() => Int)
 	limit: number;
 
@@ -132,10 +113,6 @@ class AdminNotificationSearch extends NotificationSearch {
 	@IsOptional()
 	@Field(() => String, { nullable: true })
 	receiverId?: mongoose.ObjectId;
-
-	@IsOptional()
-	@Field(() => String, { nullable: true })
-	memberId?: mongoose.ObjectId;
 }
 
 @InputType()
@@ -147,6 +124,7 @@ export class AllNotificationsInquiry {
 
 	@IsNotEmpty()
 	@Min(1)
+	@Max(100)
 	@Field(() => Int)
 	limit: number;
 

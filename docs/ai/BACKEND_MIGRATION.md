@@ -12,9 +12,11 @@ The backend has moved from the staged GoTrip identity rename into a breaking tra
 | Ownership role | `MemberType.AGENT` remains the tour creator/operator role |
 | Member role enum | `USER`, `AGENT`, `ADMIN` unchanged |
 | Main collection | `tours` |
-| New ERD collections | `destinations`, `tourSchedules`, `bookings`, `payments`, `wishlists`, `notifications`, and `notices` |
+| Supporting collections | `members`, `likes`, `views`, `comments`, `follows`, `boardArticles`, `notices`, and `notifications` |
 | Shared social modules | Likes, views, comments, and notifications use `TOUR` group naming |
-| Batch ranking | Calculates tour, agent, and destination ranks from engagement, bookings, wishlists, and destination tour counts |
+| Batch ranking | Calculates tour and agent ranks from engagement counters |
+
+Scope note: booking, payment, wishlist, destination, and tour-schedule modules were removed on 2026-07-19. See the scope-reduction decision in `DECISIONS.md`.
 
 ## GraphQL Changes
 
@@ -49,7 +51,7 @@ This is a breaking API migration. Old public property operations were not retain
 
 Removed real-estate-only fields: square, beds, rooms, barter, rent, constructedAt, and soldAt.
 
-Added tour fields: duration, min/max people, available seats, itinerary, included/excluded items, meeting point, language, difficulty, and destinationId.
+Added tour fields: duration, min/max people, available seats, itinerary, included/excluded items, meeting point, language, and difficulty.
 
 ## Enums
 
@@ -57,7 +59,6 @@ Added tour fields: duration, min/max people, available seats, itinerary, include
 | --- | --- |
 | `TourCategory` | `ADVENTURE`, `CULTURAL`, `HISTORICAL`, `BEACH`, `MOUNTAIN`, `CITY`, `CRUISE` |
 | `TourStatus` | `ACTIVE`, `SOLD_OUT`, `PAUSED`, `DELETED` |
-| `BookingStatus` | `PENDING`, `CONFIRMED`, `CANCELLED`, `COMPLETED` |
 
 ## Data Migration Boundary
 
@@ -77,4 +78,4 @@ Minimum mapping:
 | `propertyDesc` | `tourDesc` |
 | `memberId` | `memberId` |
 
-Travel-specific fields such as `tourCategory`, `tourDuration`, `tourMaxPeople`, `tourMinPeople`, `tourAvailableSeats`, and destination/schedule data need explicit seed defaults or manual data curation.
+Travel-specific fields such as `tourCategory`, `tourDuration`, `tourMaxPeople`, `tourMinPeople`, `tourAvailableSeats` need explicit seed defaults or manual data curation.

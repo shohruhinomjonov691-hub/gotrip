@@ -25,7 +25,6 @@ export class CommentResolver {
 	): Promise<Comment> {
 		console.log('Mutation: createComment');
 		input.commentRefId = shapeIntoMongoObjectId(input.commentRefId);
-		if (input.parentCommentId) input.parentCommentId = shapeIntoMongoObjectId(input.parentCommentId);
 		return await this.commentService.createComment(memberId, input);
 	}
 
@@ -48,7 +47,6 @@ export class CommentResolver {
 	): Promise<Comments> {
 		console.log('Query: getComments');
 		input.search.commentRefId = shapeIntoMongoObjectId(input.search.commentRefId);
-		if (input.search.parentCommentId) input.search.parentCommentId = shapeIntoMongoObjectId(input.search.parentCommentId);
 		return await this.commentService.getComments(memberId, input);
 	}
 

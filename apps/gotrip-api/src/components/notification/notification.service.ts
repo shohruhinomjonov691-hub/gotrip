@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
-import { Booking } from '../../libs/dto/booking/booking';
 import { BoardArticle } from '../../libs/dto/board-article/board-article';
 import { Comment } from '../../libs/dto/comment/comment';
 import { Member } from '../../libs/dto/member/member';
@@ -12,13 +11,13 @@ import {
 	NotificationInput,
 	NotificationsInquiry,
 } from '../../libs/dto/notification/notification.input';
-import { Payment } from '../../libs/dto/payment/payment';
 import { Tour } from '../../libs/dto/tour/tour';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { CommentGroup, CommentStatus } from '../../libs/enums/comment.enum';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { MemberStatus } from '../../libs/enums/member.enum';
 import { NotificationGroup, NotificationStatus, NotificationType } from '../../libs/enums/notification.enum';
+import { TourStatus } from '../../libs/enums/tour.enum';
 import { T } from '../../libs/types/common';
 import { shapeIntoMongoObjectId } from '../../libs/config';
 
@@ -26,13 +25,11 @@ import { shapeIntoMongoObjectId } from '../../libs/config';
 export class NotificationService {
 	constructor(
 		@InjectModel('Notification') private readonly notificationModel: Model<Notification>,
-		@InjectModel('Booking') private readonly bookingModel: Model<Booking>,
-		@InjectModel('Payment') private readonly paymentModel: Model<Payment>,
-			@InjectModel('Comment') private readonly commentModel: Model<Comment>,
-			@InjectModel('Tour') private readonly tourModel: Model<Tour>,
-			@InjectModel('BoardArticle') private readonly boardArticleModel: Model<BoardArticle>,
-			@InjectModel('Member') private readonly memberModel: Model<Member>,
-		) {}
+		@InjectModel('Comment') private readonly commentModel: Model<Comment>,
+		@InjectModel('Tour') private readonly tourModel: Model<Tour>,
+		@InjectModel('BoardArticle') private readonly boardArticleModel: Model<BoardArticle>,
+		@InjectModel('Member') private readonly memberModel: Model<Member>,
+	) {}
 
 	public async createNotification(input: NotificationInput): Promise<Notification> {
 		if (input.authorId && String(input.authorId) === String(input.receiverId)) {
@@ -42,7 +39,6 @@ export class NotificationService {
 		try {
 			return await this.notificationModel.create({
 				...input,
-				memberId: input.memberId ?? input.receiverId,
 				notificationStatus: NotificationStatus.WAIT,
 			});
 		} catch (err) {
@@ -110,76 +106,23 @@ export class NotificationService {
 		const match: T = {};
 		this.shapeNotificationMatchQuery(match, input.search);
 		if (input.search.receiverId) match.receiverId = shapeIntoMongoObjectId(input.search.receiverId);
-		if (input.search.memberId) match.memberId = shapeIntoMongoObjectId(input.search.memberId);
 
 		return await this.getNotificationsByMatch(match, input);
 	}
 
-	public async notifyAgentApproved(memberId: ObjectId): Promise<Notification | null> {
-		return await this.createSystemNotification({
-			notificationType: NotificationType.AGENT_APPROVED,
-			notificationGroup: NotificationGroup.MEMBER,
-			notificationTitle: 'Agent request approved',
-			notificationDesc: 'Your agent request has been approved.',
-			receiverId: memberId,
-		});
-	}
+	public async contactAgent(memberId: ObjectId, tourId: ObjectId, message: string): Promise<Notification> {
+		const tour = await this.tourModel.findOne({ _id: tourId, tourStatus: TourStatus.ACTIVE }).exec();
+		if (!tour) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		if (String(tour.memberId) === String(memberId)) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
 
-	public async notifyAgentRejected(memberId: ObjectId): Promise<Notification | null> {
-		return await this.createSystemNotification({
-			notificationType: NotificationType.AGENT_REJECTED,
-			notificationGroup: NotificationGroup.MEMBER,
-			notificationTitle: 'Agent request rejected',
-			notificationDesc: 'Your agent request has been rejected.',
-			receiverId: memberId,
-		});
-	}
-
-	public async notifyBookingCreated(bookingId: ObjectId): Promise<Notification | null> {
-		const booking = await this.bookingModel.findById(bookingId).exec();
-		if (!booking) return null;
-
-		return await this.createSystemNotification({
-			notificationType: NotificationType.BOOKING_CREATED,
-			notificationGroup: NotificationGroup.BOOKING,
-			notificationTitle: 'New booking created',
-			notificationDesc: `Booking ${booking.bookingNumber} was created.`,
-			authorId: booking.memberId,
-			receiverId: booking.agentId,
-			bookingId: booking._id,
-			tourId: booking.tourId,
-		});
-	}
-
-	public async notifyPaymentSuccess(paymentId: ObjectId): Promise<Notification | null> {
-		const payment = await this.paymentModel.findById(paymentId).exec();
-		if (!payment) return null;
-
-		return await this.createSystemNotification({
-			notificationType: NotificationType.PAYMENT_SUCCESS,
-			notificationGroup: NotificationGroup.PAYMENT,
-			notificationTitle: 'Payment successful',
-			notificationDesc: 'Your payment was marked successful.',
-			receiverId: payment.memberId,
-			paymentId: payment._id,
-			bookingId: payment.bookingId,
-			tourId: payment.tourId,
-		});
-	}
-
-	public async notifyPaymentFailed(paymentId: ObjectId): Promise<Notification | null> {
-		const payment = await this.paymentModel.findById(paymentId).exec();
-		if (!payment) return null;
-
-		return await this.createSystemNotification({
-			notificationType: NotificationType.PAYMENT_FAILED,
-			notificationGroup: NotificationGroup.PAYMENT,
-			notificationTitle: 'Payment failed',
-			notificationDesc: 'Your payment was marked failed.',
-			receiverId: payment.memberId,
-			paymentId: payment._id,
-			bookingId: payment.bookingId,
-			tourId: payment.tourId,
+		return await this.createNotification({
+			notificationType: NotificationType.CONTACT_AGENT,
+			notificationGroup: NotificationGroup.TOUR,
+			notificationTitle: 'New tour inquiry',
+			notificationDesc: message,
+			authorId: memberId,
+			receiverId: tour.memberId,
+			tourId,
 		});
 	}
 
@@ -228,18 +171,18 @@ export class NotificationService {
 		const notificationGroup = this.resolveLikeNotificationGroup(likeGroup);
 		if (!notificationGroup) return null;
 
-			return await this.createSystemNotification({
-				notificationType: NotificationType.LIKE_CREATED,
-				notificationGroup,
-				notificationTitle: 'New like',
-				notificationDesc: 'A member liked your content.',
+		return await this.createSystemNotification({
+			notificationType: NotificationType.LIKE_CREATED,
+			notificationGroup,
+			notificationTitle: 'New like',
+			notificationDesc: 'A member liked your content.',
 			authorId,
 			receiverId,
-				tourId: likeGroup === LikeGroup.TOUR ? likeRefId : undefined,
-				articleId: likeGroup === LikeGroup.ARTICLE ? likeRefId : undefined,
-				commentId: likeGroup === LikeGroup.COMMENT ? likeRefId : undefined,
-			});
-		}
+			tourId: likeGroup === LikeGroup.TOUR ? likeRefId : undefined,
+			articleId: likeGroup === LikeGroup.ARTICLE ? likeRefId : undefined,
+			commentId: likeGroup === LikeGroup.COMMENT ? likeRefId : undefined,
+		});
+	}
 
 	public async notifyAdminNoticeCreated(notice: Notice): Promise<void> {
 		try {
@@ -258,7 +201,6 @@ export class NotificationService {
 					notificationTitle: notice.noticeTitle,
 					notificationDesc: notice.noticeContent.slice(0, 500),
 					receiverId: member._id,
-					memberId: member._id,
 				})),
 			);
 		} catch (err) {
@@ -303,8 +245,6 @@ export class NotificationService {
 		if (search.notificationType) match.notificationType = search.notificationType;
 		if (search.notificationGroup) match.notificationGroup = search.notificationGroup;
 		if (search.tourId) match.tourId = shapeIntoMongoObjectId(search.tourId);
-		if (search.bookingId) match.bookingId = shapeIntoMongoObjectId(search.bookingId);
-		if (search.paymentId) match.paymentId = shapeIntoMongoObjectId(search.paymentId);
 		if (search.articleId) match.articleId = shapeIntoMongoObjectId(search.articleId);
 		if (search.commentId) match.commentId = shapeIntoMongoObjectId(search.commentId);
 		if (search.startDate || search.endDate) {
@@ -315,11 +255,6 @@ export class NotificationService {
 	}
 
 	private async resolveCommentReceiver(comment: Comment): Promise<ObjectId | null> {
-		if (comment.parentCommentId) {
-			const parentComment = await this.commentModel.findById(comment.parentCommentId).exec();
-			return parentComment?.memberId ?? null;
-		}
-
 		switch (comment.commentGroup) {
 			case CommentGroup.TOUR: {
 				const tour = await this.tourModel.findById(comment.commentRefId).exec();
@@ -340,7 +275,6 @@ export class NotificationService {
 	}
 
 	private resolveCommentNotificationGroup(comment: Comment): NotificationGroup {
-		if (comment.parentCommentId) return NotificationGroup.COMMENT;
 		if (comment.commentGroup === CommentGroup.TOUR) return NotificationGroup.TOUR;
 		if (comment.commentGroup === CommentGroup.ARTICLE) return NotificationGroup.ARTICLE;
 		if (comment.commentGroup === CommentGroup.MEMBER) return NotificationGroup.MEMBER;

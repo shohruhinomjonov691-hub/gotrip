@@ -1,6 +1,6 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsIn, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
-import { AgentRequestStatus, MemberAuthType, MemberStatus, MemberType } from '../../enums/member.enum';
+import { IsIn, IsNotEmpty, IsOptional, Length, Max, Min } from 'class-validator';
+import { MemberAuthType, MemberStatus, MemberType } from '../../enums/member.enum';
 import { availableAgentSorts, availableMemberSorts } from '../../config';
 import { Direction } from '../../enums/common.enum';
 
@@ -12,7 +12,7 @@ export class MemberInput {
 	memberNick: string;
 
 	@IsNotEmpty()
-	@Length(5, 12)
+	@Length(5, 30)
 	@Field(() => String)
 	memberPassword: string;
 
@@ -27,20 +27,6 @@ export class MemberInput {
 	@IsOptional()
 	@Field(() => MemberAuthType, { nullable: true })
 	memberAuthType?: MemberAuthType;
-
-	@IsOptional()
-	@Field(() => Boolean, { nullable: true })
-	wantsToBecomeAgent?: boolean;
-
-	@IsOptional()
-	@Length(1, 500)
-	@Field(() => String, { nullable: true })
-	agentRequestMessage?: string;
-
-	@IsOptional()
-	@Length(1, 300)
-	@Field(() => String, { nullable: true })
-	agentExperience?: string;
 }
 
 @InputType()
@@ -51,7 +37,7 @@ export class LoginInput {
 	memberNick: string;
 
 	@IsNotEmpty()
-	@Length(5, 12)
+	@Length(5, 30)
 	@Field(() => String)
 	memberPassword: string;
 }
@@ -72,6 +58,7 @@ export class AgentsInquiry {
 
 	@IsNotEmpty()
 	@Min(1)
+	@Max(100)
 	@Field(() => Int)
 	limit: number;
 
@@ -100,10 +87,6 @@ class MISearch {
 	memberType?: MemberType;
 
 	@IsOptional()
-	@Field(() => AgentRequestStatus, { nullable: true })
-	agentRequestStatus?: AgentRequestStatus;
-
-	@IsOptional()
 	@Field(() => String, { nullable: true })
 	text?: string;
 }
@@ -117,6 +100,7 @@ export class MembersInquiry {
 
 	@IsNotEmpty()
 	@Min(1)
+	@Max(100)
 	@Field(() => Int)
 	limit: number;
 
