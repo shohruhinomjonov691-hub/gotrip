@@ -1,7 +1,9 @@
-import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsInt, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
+import { Field, Float, InputType, Int } from '@nestjs/graphql';
+import { IsInt, IsNotEmpty, IsOptional, Length, Max, Min, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { TourCategory, TourDifficulty, TourLanguage, TourLocation, TourStatus } from '../../enums/tour.enum';
 import * as mongoose from 'mongoose';
+import { TourTranslationInput } from './tour.input';
 
 @InputType()
 export class TourUpdate {
@@ -65,6 +67,12 @@ export class TourUpdate {
 	tourDesc?: string;
 
 	@IsOptional()
+	@Min(0)
+	@Max(5)
+	@Field(() => Float, { nullable: true })
+	tourRating?: number;
+
+	@IsOptional()
 	@Field(() => [String], { nullable: true })
 	tourItinerary?: string[];
 
@@ -88,5 +96,20 @@ export class TourUpdate {
 	@Field(() => TourDifficulty, { nullable: true })
 	tourDifficulty?: TourDifficulty;
 
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	destinationId?: mongoose.ObjectId;
+
+	@IsOptional()
+	@ValidateNested({ each: true })
+	@Type(() => TourTranslationInput)
+	@Field(() => [TourTranslationInput], { nullable: true })
+	translations?: TourTranslationInput[];
+
+	// Set by the service (not client-supplied — no @Field), but still needs at least one
+	// class-validator decorator: with whitelist+forbidNonWhitelisted, an undecorated class
+	// field is instantiated as an own `undefined` property (useDefineForClassFields) and gets
+	// rejected as "should not exist" even when the client never sent it. @IsOptional prevents that.
+	@IsOptional()
 	deletedAt?: Date;
 }

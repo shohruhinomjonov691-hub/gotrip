@@ -7,6 +7,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { MongooseModule } from '@nestjs/mongoose';
 import TourSchema from 'apps/gotrip-api/src/schemas/Tour.model';
 import MemberSchema from 'apps/gotrip-api/src/schemas/Member.model';
+import DestinationSchema from 'apps/gotrip-api/src/schemas/Destination.model';
 
 @Module({
 	imports: [
@@ -16,6 +17,7 @@ import MemberSchema from 'apps/gotrip-api/src/schemas/Member.model';
 		MongooseModule.forFeature([
 			{ name: 'Tour', schema: TourSchema },
 			{ name: 'Member', schema: MemberSchema },
+			{ name: 'Destination', schema: DestinationSchema },
 		]),
 	],
 	controllers: [BatchController],

@@ -35,12 +35,6 @@ export class AuthService {
 		return await this.jwtService.signAsync(payload);
 	}
 
-	public async verifyToken(token: string): Promise<Member> {
-		const member = await this.jwtService.verifyAsync(token);
-		member._id = shapeIntoMongoObjectId(member._id);
-		return member;
-	}
-
 	/**
 	 * Verify the token AND re-read the member from the database, so role and
 	 * status changes (block, delete, role downgrade) take effect immediately

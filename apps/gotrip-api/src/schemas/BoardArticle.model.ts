@@ -1,5 +1,11 @@
 import { Schema } from 'mongoose';
 import { BoardArticleCategory, BoardArticleStatus } from '../libs/enums/board-article.enum';
+import { buildTranslationSchema } from '../libs/utils/translation.util';
+
+const BoardArticleTranslationSchema = buildTranslationSchema({
+	articleTitle: { type: String },
+	articleContent: { type: String },
+});
 
 const BoardArticleSchema = new Schema(
 	{
@@ -29,6 +35,11 @@ const BoardArticleSchema = new Schema(
 			type: String,
 		},
 
+		articleImages: {
+			type: [String],
+			default: [],
+		},
+
 		articleLikes: {
 			type: Number,
 			default: 0,
@@ -49,8 +60,15 @@ const BoardArticleSchema = new Schema(
 			required: true,
 			ref: 'Member',
 		},
+
+		translations: {
+			type: [BoardArticleTranslationSchema],
+			default: [],
+		},
 	},
 	{ timestamps: true, collection: 'boardArticles' },
 );
+
+BoardArticleSchema.index({ articleCategory: 1, memberId: 1 });
 
 export default BoardArticleSchema;

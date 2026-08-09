@@ -8,8 +8,6 @@ export class AuthGuard implements CanActivate {
 	constructor(private authService: AuthService) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
-		console.info('--- @guard() Authentication [AuthGuard] ---');
-
 		if (context.getType<GqlContextType>() === 'graphql') {
 			const request = GqlExecutionContext.create(context).getContext().req;
 
@@ -20,7 +18,6 @@ export class AuthGuard implements CanActivate {
 				authMember = await this.authService.retrieveAuthMember(token);
 			if (!authMember) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
 
-			console.log('memberNick[auth] =>', authMember.memberNick);
 			request.body = request.body ?? {};
 			request.body.authMember = authMember;
 

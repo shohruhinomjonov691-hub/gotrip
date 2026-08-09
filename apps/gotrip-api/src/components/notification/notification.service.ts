@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
 import { BoardArticle } from '../../libs/dto/board-article/board-article';
@@ -15,11 +15,12 @@ import { Tour } from '../../libs/dto/tour/tour';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { CommentGroup, CommentStatus } from '../../libs/enums/comment.enum';
 import { LikeGroup } from '../../libs/enums/like.enum';
-import { MemberStatus } from '../../libs/enums/member.enum';
+import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { NotificationGroup, NotificationStatus, NotificationType } from '../../libs/enums/notification.enum';
 import { TourStatus } from '../../libs/enums/tour.enum';
 import { T } from '../../libs/types/common';
 import { shapeIntoMongoObjectId } from '../../libs/config';
+import { MessageService } from '../message/message.service';
 
 @Injectable()
 export class NotificationService {
@@ -29,6 +30,10 @@ export class NotificationService {
 		@InjectModel('Tour') private readonly tourModel: Model<Tour>,
 		@InjectModel('BoardArticle') private readonly boardArticleModel: Model<BoardArticle>,
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
+		/* See the matching note in message.service.ts — this is a genuine two-way
+		   dependency (a tour inquiry needs to create a message; a chat message
+		   needs to notify its receiver), resolved with forwardRef on both sides. */
+		@Inject(forwardRef(() => MessageService)) private readonly messageService: MessageService,
 	) {}
 
 	public async createNotification(input: NotificationInput): Promise<Notification> {
@@ -110,16 +115,35 @@ export class NotificationService {
 		return await this.getNotificationsByMatch(match, input);
 	}
 
+	/**
+	 * BUG FIXED HERE (reproduced in the browser): this used to only create a
+	 * notification — no conversation, no message. The notification routed to
+	 * Messages Center, which opened whatever conversation was first in the list,
+	 * empty of any inquiry content. A "Send Inquiry" is now delivered as a real
+	 * first message in a real conversation with the guide, carrying the tour
+	 * name and key details, and the notification links straight to it.
+	 */
 	public async contactAgent(memberId: ObjectId, tourId: ObjectId, message: string): Promise<Notification> {
 		const tour = await this.tourModel.findOne({ _id: tourId, tourStatus: TourStatus.ACTIVE }).exec();
 		if (!tour) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 		if (String(tour.memberId) === String(memberId)) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
 
+		const sender = await this.memberModel.findById(memberId).select('memberNick').lean().exec();
+		const inquiryText = [
+			`📩 Tour inquiry — ${tour.tourTitle}`,
+			message,
+			`—`,
+			`📍 ${tour.tourLocation} · 💵 $${tour.tourPrice} · 🕐 ${tour.tourDuration} day(s) · 👥 up to ${tour.tourMaxPeople}`,
+		].join('\n');
+
+		const conversation = await this.messageService.deliverTourInquiry(memberId, tour.memberId, inquiryText);
+
 		return await this.createNotification({
 			notificationType: NotificationType.CONTACT_AGENT,
 			notificationGroup: NotificationGroup.TOUR,
-			notificationTitle: 'New tour inquiry',
+			notificationTitle: `${sender?.memberNick ?? 'A traveller'} sent an inquiry about ${tour.tourTitle}`,
 			notificationDesc: message,
+			notificationLink: `/mypage?category=messages&conversationId=${String(conversation._id)}`,
 			authorId: memberId,
 			receiverId: tour.memberId,
 			tourId,
@@ -184,13 +208,99 @@ export class NotificationService {
 		});
 	}
 
-	public async notifyAdminNoticeCreated(notice: Notice): Promise<void> {
+	/**
+	 * Guide (agent) application lifecycle.
+	 *
+	 * These three reuse createSystemNotification / insertMany exactly like the
+	 * existing follow / like / notice events — no new delivery mechanism. They
+	 * carry notificationLink because an application has no tourId/articleId/
+	 * commentId from which a destination could be derived.
+	 */
+	public async notifyGuideRequestSubmitted(applicantId: ObjectId, applicantNick?: string): Promise<void> {
 		try {
-			const members = await this.memberModel
-				.find({ memberStatus: MemberStatus.ACTIVE })
+			/* Fan out to every active ADMIN — same shape as notifyAdminNoticeCreated,
+			   which already does a bulk insert against a member query. */
+			const admins = await this.memberModel
+				.find({ memberType: MemberType.ADMIN, memberStatus: MemberStatus.ACTIVE })
 				.select('_id')
 				.lean()
 				.exec();
+			if (!admins.length) return;
+
+			const who = applicantNick ? `${applicantNick}` : 'A member';
+			await this.notificationModel.insertMany(
+				admins.map((admin) => ({
+					notificationType: NotificationType.GUIDE_REQUEST,
+					notificationGroup: NotificationGroup.MEMBER,
+					notificationStatus: NotificationStatus.WAIT,
+					notificationTitle: 'New Guide Application',
+					notificationDesc: `${who} applied to become a guide.`,
+					/* Deep-links to the Guide Requests screen with the applicant
+					   highlighted, so the admin lands on the exact row. */
+					notificationLink: `/_admin/guides?highlight=${String(applicantId)}`,
+					authorId: applicantId,
+					receiverId: admin._id,
+				})),
+			);
+		} catch (err) {
+			console.log('Warning, guide request notifications were not created:', err);
+		}
+	}
+
+	public async notifyGuideRequestApproved(applicantId: ObjectId): Promise<Notification | null> {
+		return await this.createSystemNotification({
+			notificationType: NotificationType.GUIDE_APPROVED,
+			notificationGroup: NotificationGroup.MEMBER,
+			notificationTitle: 'Congratulations!',
+			notificationDesc: 'Your Guide application has been approved.',
+			/* The member is an AGENT by the time this is read, so the guide hub is
+			   the useful landing spot. */
+			notificationLink: '/mypage?category=myTours',
+			receiverId: applicantId,
+		});
+	}
+
+	public async notifyGuideRequestRejected(applicantId: ObjectId): Promise<Notification | null> {
+		return await this.createSystemNotification({
+			notificationType: NotificationType.GUIDE_REJECTED,
+			notificationGroup: NotificationGroup.MEMBER,
+			notificationTitle: 'Guide application update',
+			notificationDesc: 'Your Guide application was not approved this time. You may apply again.',
+			/* Become a Guide renders the rejected state and the re-apply path. */
+			notificationLink: '/mypage?category=becomeGuide',
+			receiverId: applicantId,
+		});
+	}
+
+	/**
+	 * Private message received. Completes the four events specified for the
+	 * notification module; it lives here (not in MessageService) so every
+	 * notification is still produced by one service.
+	 *
+	 * notificationLink carries the conversation id so the bell can open Messages
+	 * with the right thread already selected.
+	 */
+	public async notifyMessageReceived(
+		senderId: ObjectId,
+		receiverId: ObjectId,
+		conversationId: ObjectId,
+		senderNick?: string,
+		preview?: string,
+	): Promise<Notification | null> {
+		return await this.createSystemNotification({
+			notificationType: NotificationType.MESSAGE_RECEIVED,
+			notificationGroup: NotificationGroup.MEMBER,
+			notificationTitle: senderNick ? `${senderNick} sent you a message` : 'New message',
+			notificationDesc: preview ? preview.slice(0, 200) : undefined,
+			notificationLink: `/mypage?category=messages&conversationId=${String(conversationId)}`,
+			authorId: senderId,
+			receiverId,
+		});
+	}
+
+	public async notifyAdminNoticeCreated(notice: Notice): Promise<void> {
+		try {
+			const members = await this.memberModel.find({ memberStatus: MemberStatus.ACTIVE }).select('_id').lean().exec();
 			if (!members.length) return;
 
 			await this.notificationModel.insertMany(

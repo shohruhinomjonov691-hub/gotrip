@@ -12,6 +12,8 @@ describe('TourService.createTour', () => {
 	let memberService: { getMember: jest.Mock; memberStatsEditor: jest.Mock };
 	let likeService: { toggleLike: jest.Mock };
 	let notificationService: { notifyLikeCreated: jest.Mock };
+	let destinationService: { assertDestinationOwnership: jest.Mock };
+	let aiTranslationService: { translateEntityAsync: jest.Mock };
 
 	const memberId = new Types.ObjectId();
 	const spoofedMemberId = new Types.ObjectId();
@@ -45,14 +47,21 @@ describe('TourService.createTour', () => {
 		notificationService = {
 			notifyLikeCreated: jest.fn(),
 		};
+		destinationService = {
+			assertDestinationOwnership: jest.fn(),
+		};
+		aiTranslationService = {
+			translateEntityAsync: jest.fn(),
+		};
 
 		service = new TourService(
 				tourModel as any,
 				memberService as any,
 				{} as any,
 				likeService as any,
-				{} as any,
 				notificationService as any,
+				destinationService as any,
+				aiTranslationService as any,
 			);
 	});
 

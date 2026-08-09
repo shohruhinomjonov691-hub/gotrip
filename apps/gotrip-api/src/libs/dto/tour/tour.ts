@@ -1,8 +1,38 @@
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, Float, ObjectType } from '@nestjs/graphql';
 import * as mongoose from 'mongoose';
 import { TourCategory, TourDifficulty, TourLanguage, TourLocation, TourStatus } from '../../enums/tour.enum';
+import { Locale } from '../../enums/locale.enum';
 import { Member, TotalCounter } from '../member/member';
 import { MeLiked } from '../like/like';
+
+/**
+ * One locale's translated override for a subset of Tour's text fields. Fields
+ * left out fall back to the base Tour field for that locale — see
+ * getLocalizedField() on the frontend, the single place that fallback happens.
+ */
+@ObjectType()
+export class TourTranslation {
+	@Field(() => Locale)
+	locale: Locale;
+
+	@Field(() => String, { nullable: true })
+	tourTitle?: string;
+
+	@Field(() => String, { nullable: true })
+	tourDesc?: string;
+
+	@Field(() => String, { nullable: true })
+	tourMeetingPoint?: string;
+
+	@Field(() => [String], { nullable: true })
+	tourItinerary?: string[];
+
+	@Field(() => [String], { nullable: true })
+	tourIncluded?: string[];
+
+	@Field(() => [String], { nullable: true })
+	tourExcluded?: string[];
+}
 
 @ObjectType()
 export class Tour {
@@ -48,6 +78,12 @@ export class Tour {
 	@Field(() => Number)
 	tourRank: number;
 
+	// Guide-entered average rating (0-5), separate from the computed engagement rank above —
+	// GoTrip has no per-traveller review system, so this is a single editable figure the
+	// tour's own guide sets, not an aggregate of individual reviews.
+	@Field(() => Float, { nullable: true })
+	tourRating?: number;
+
 	@Field(() => [String])
 	tourImages: string[];
 
@@ -74,6 +110,12 @@ export class Tour {
 
 	@Field(() => String)
 	memberId: mongoose.ObjectId;
+
+	@Field(() => String, { nullable: true })
+	destinationId?: mongoose.ObjectId;
+
+	@Field(() => [TourTranslation], { nullable: true })
+	translations?: TourTranslation[];
 
 	@Field(() => Date, { nullable: true })
 	deletedAt?: Date;

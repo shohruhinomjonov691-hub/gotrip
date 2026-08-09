@@ -19,6 +19,8 @@ export enum Message {
 	ONLY_SPECIFIC_ROLES_ALLOWED = 'Allowed only for members with specific roles!',
 	NOT_ALLOWED_REQUEST = 'Not Allowed Request!',
 	PROVIDE_ALLOWED_FORMAT = 'Please provide jpg, jpeg or png images!',
+	PROVIDE_ALLOWED_DOCUMENT_FORMAT = 'Please provide a PDF, Word, Excel, PowerPoint, TXT or ZIP file!',
+	FILE_TOO_LARGE = 'File is larger than the 10MB limit!',
 	SELF_SUBSCRIPTION_DENIED = 'Self subscription is denied!',
 }
 

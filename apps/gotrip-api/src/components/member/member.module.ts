@@ -8,6 +8,7 @@ import { ViewModule } from '../view/view.module';
 import { LikeModule } from '../like/like.module';
 import FollowSchema from '../../schemas/Follow.model';
 import { NotificationModule } from '../notification/notification.module';
+import { TranslationModule } from '../translation/translation.module';
 
 @Module({
 	imports: [
@@ -17,6 +18,7 @@ import { NotificationModule } from '../notification/notification.module';
 		ViewModule,
 		LikeModule,
 		NotificationModule,
+		TranslationModule,
 	],
 	providers: [MemberResolver, MemberService],
 	exports: [MemberService],

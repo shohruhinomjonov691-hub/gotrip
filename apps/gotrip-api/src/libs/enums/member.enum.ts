@@ -29,3 +29,17 @@ export enum MemberAuthType {
 registerEnumType(MemberAuthType, {
 	name: 'MemberAuthType',
 });
+
+// Guide workflow: USER -> requestAgentRole (PENDING) -> admin approve/reject.
+// Signup always creates USER; MemberType only becomes AGENT via admin approval
+// (or a direct admin override through updateMemberByAdmin).
+export enum AgentRequestStatus {
+	NONE = 'NONE',
+	PENDING = 'PENDING',
+	APPROVED = 'APPROVED',
+	REJECTED = 'REJECTED',
+}
+
+registerEnumType(AgentRequestStatus, {
+	name: 'AgentRequestStatus',
+});

@@ -22,6 +22,8 @@ import { LikeInput } from '../../libs/dto/like/like.input';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { MemberType } from '../../libs/enums/member.enum';
 import { NotificationService } from '../notification/notification.service';
+import { DestinationService } from '../destination/destination.service';
+import { AiTranslationService, TranslationEntryLike } from '../translation/ai-translation.service';
 
 @Injectable()
 export class TourService {
@@ -31,7 +33,25 @@ export class TourService {
 		private viewService: ViewService,
 		private likeService: LikeService,
 		private notificationService: NotificationService,
+		private destinationService: DestinationService,
+		private aiTranslationService: AiTranslationService,
 	) {}
+
+	private queueTranslation(tour: Tour): void {
+		this.aiTranslationService.translateEntityAsync(this.tourModel, {
+			entityType: 'tour',
+			entityId: tour._id,
+			fields: {
+				tourTitle: tour.tourTitle,
+				tourDesc: tour.tourDesc,
+				tourMeetingPoint: tour.tourMeetingPoint,
+				tourItinerary: tour.tourItinerary,
+				tourIncluded: tour.tourIncluded,
+				tourExcluded: tour.tourExcluded,
+			},
+			existingTranslations: tour.translations as unknown as TranslationEntryLike[],
+		});
+	}
 
 	// A tour still occupies a listing slot while ACTIVE or PAUSED; SOLD_OUT and
 	// DELETED release it. `memberTours` counts the listed ones.
@@ -50,6 +70,11 @@ export class TourService {
 			throw new BadRequestException('tourAvailableSeats cannot exceed tourMaxPeople.');
 		}
 
+		// A guide may only place a tour inside a destination they own.
+		if (input.destinationId) {
+			await this.destinationService.assertDestinationOwnership(shapeIntoMongoObjectId(input.destinationId), memberId);
+		}
+
 		input.memberId = memberId;
 
 		try {
@@ -59,6 +84,7 @@ export class TourService {
 				targetKey: 'memberTours',
 				modifier: 1,
 			});
+			this.queueTranslation(result);
 			return result;
 		} catch (err) {
 			console.log('Error, Service.model:', err);
@@ -102,6 +128,11 @@ export class TourService {
 			tourStatus: { $ne: TourStatus.DELETED },
 		};
 
+		// A guide may only (re)assign a tour to a destination they own.
+		if (input.destinationId) {
+			await this.destinationService.assertDestinationOwnership(shapeIntoMongoObjectId(input.destinationId), memberId);
+		}
+
 		if (tourStatus === TourStatus.DELETED) input.deletedAt = new Date();
 
 		const current = await this.tourModel.findOne(search).exec();
@@ -115,6 +146,7 @@ export class TourService {
 			await this.memberService.memberStatsEditor({ _id: result.memberId, targetKey: 'memberTours', modifier });
 		}
 
+		this.queueTranslation(result);
 		return result;
 	}
 
@@ -131,7 +163,6 @@ export class TourService {
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
 		this.shapeMatchQuery(match, input);
-		console.log('match', match);
 
 		const result = await this.tourModel
 			.aggregate([
@@ -157,10 +188,12 @@ export class TourService {
 	}
 
 	private shapeMatchQuery(match: T, input: ToursInquiry): void {
-		const { memberId, locationList, categoryList, periodsRange, pricesRange, durationRange, text } = input.search;
+		const { memberId, locationList, categoryList, destinationId, periodsRange, pricesRange, durationRange, text } =
+			input.search;
 		if (memberId) match.memberId = shapeIntoMongoObjectId(memberId);
 		if (locationList && locationList.length) match.tourLocation = { $in: locationList };
 		if (categoryList && categoryList.length) match.tourCategory = { $in: categoryList };
+		if (destinationId) match.destinationId = shapeIntoMongoObjectId(destinationId);
 
 		if (pricesRange) match.tourPrice = { $gte: pricesRange.start, $lte: pricesRange.end };
 		if (periodsRange) match.createdAt = { $gte: periodsRange.start, $lte: periodsRange.end };
@@ -283,6 +316,7 @@ export class TourService {
 			await this.memberService.memberStatsEditor({ _id: result.memberId, targetKey: 'memberTours', modifier });
 		}
 
+		this.queueTranslation(result);
 		return result;
 	}
 

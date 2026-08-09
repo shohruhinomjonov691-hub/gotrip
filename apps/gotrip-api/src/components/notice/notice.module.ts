@@ -5,9 +5,15 @@ import { NoticeResolver } from './notice.resolver';
 import { NoticeService } from './notice.service';
 import { AuthModule } from '../auth/auth.module';
 import { NotificationModule } from '../notification/notification.module';
+import { TranslationModule } from '../translation/translation.module';
 
 @Module({
-	imports: [MongooseModule.forFeature([{ name: 'Notice', schema: NoticeSchema }]), AuthModule, NotificationModule],
+	imports: [
+		MongooseModule.forFeature([{ name: 'Notice', schema: NoticeSchema }]),
+		AuthModule,
+		NotificationModule,
+		TranslationModule,
+	],
 	providers: [NoticeResolver, NoticeService],
 	exports: [NoticeService],
 })

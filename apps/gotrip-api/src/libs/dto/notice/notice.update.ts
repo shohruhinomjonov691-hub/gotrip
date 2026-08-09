@@ -2,6 +2,7 @@ import { Field, InputType } from '@nestjs/graphql';
 import { IsNotEmpty, IsOptional, Length } from 'class-validator';
 import * as mongoose from 'mongoose';
 import { NoticeCategory, NoticeStatus } from '../../enums/notice.enum';
+import { NoticeTranslationInput } from './notice.input';
 
 @InputType()
 export class NoticeUpdate {
@@ -26,4 +27,8 @@ export class NoticeUpdate {
 	@Length(3, 2000)
 	@Field(() => String, { nullable: true })
 	noticeContent?: string;
+
+	@IsOptional()
+	@Field(() => [NoticeTranslationInput], { nullable: true })
+	translations?: NoticeTranslationInput[];
 }

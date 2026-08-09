@@ -3,6 +3,22 @@ import { IsIn, IsNotEmpty, IsOptional, Length, Max, Min } from 'class-validator'
 import { availableNoticeSorts } from '../../config';
 import { Direction } from '../../enums/common.enum';
 import { NoticeCategory, NoticeStatus } from '../../enums/notice.enum';
+import { Locale } from '../../enums/locale.enum';
+
+@InputType()
+export class NoticeTranslationInput {
+	@IsNotEmpty()
+	@Field(() => Locale)
+	locale: Locale;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	noticeTitle?: string;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	noticeContent?: string;
+}
 
 @InputType()
 export class NoticeInput {
@@ -23,6 +39,10 @@ export class NoticeInput {
 	@Length(3, 2000)
 	@Field(() => String)
 	noticeContent: string;
+
+	@IsOptional()
+	@Field(() => [NoticeTranslationInput], { nullable: true })
+	translations?: NoticeTranslationInput[];
 }
 
 @InputType()

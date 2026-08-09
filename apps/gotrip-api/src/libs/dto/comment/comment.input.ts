@@ -20,6 +20,12 @@ export class CommentInput {
 	@Field(() => String)
 	commentRefId: mongoose.ObjectId;
 
+	// Set by the service from the auth token (not client-supplied — no @Field), but still
+	// needs at least one class-validator decorator: with whitelist+forbidNonWhitelisted, an
+	// undecorated class field is instantiated as an own `undefined` property
+	// (useDefineForClassFields) and gets rejected as "should not exist" even when the client
+	// never sent it. @IsOptional prevents that.
+	@IsOptional()
 	memberId?: mongoose.ObjectId;
 }
 

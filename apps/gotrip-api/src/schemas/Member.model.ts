@@ -1,5 +1,10 @@
 import { Schema } from 'mongoose';
-import { MemberAuthType, MemberStatus, MemberType } from '../libs/enums/member.enum';
+import { AgentRequestStatus, MemberAuthType, MemberStatus, MemberType } from '../libs/enums/member.enum';
+import { buildTranslationSchema } from '../libs/utils/translation.util';
+
+const MemberTranslationSchema = buildTranslationSchema({
+	memberDesc: { type: String },
+});
 
 const MemberSchema = new Schema(
 	{
@@ -111,8 +116,49 @@ const MemberSchema = new Schema(
 			default: 0,
 		},
 
+		agentRequestStatus: {
+			type: String,
+			enum: AgentRequestStatus,
+			default: AgentRequestStatus.NONE,
+		},
+
+		agentRequestMessage: {
+			type: String,
+		},
+
+		agentExperience: {
+			type: String,
+		},
+
+		memberCoverImage: {
+			type: String,
+		},
+
+		memberLanguages: {
+			type: [String],
+			default: [],
+		},
+
+		memberSpecialties: {
+			type: [String],
+			default: [],
+		},
+
+		memberSocial: {
+			facebook: { type: String },
+			twitter: { type: String },
+			linkedin: { type: String },
+			youtube: { type: String },
+			instagram: { type: String },
+		},
+
 		deletedAt: {
 			type: Date,
+		},
+
+		translations: {
+			type: [MemberTranslationSchema],
+			default: [],
 		},
 	},
 	{ timestamps: true, collection: 'members' },

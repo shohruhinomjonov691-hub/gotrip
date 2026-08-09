@@ -35,7 +35,6 @@ export class NotificationResolver {
 		@Args('input') input: ContactAgentInput,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Notification> {
-		console.log('Mutation: contactAgent');
 		const tourId = shapeIntoMongoObjectId(input.tourId);
 		return await this.notificationService.contactAgent(memberId, tourId, input.message);
 	}
@@ -46,7 +45,6 @@ export class NotificationResolver {
 		@Args('input') input: NotificationsInquiry,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Notifications> {
-		console.log('Query: getMyNotifications');
 		this.shapeNotificationsInquiry(input);
 		return await this.notificationService.getMyNotifications(memberId, input);
 	}
@@ -57,7 +55,6 @@ export class NotificationResolver {
 		@Args('notificationId') input: string,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Notification> {
-		console.log('Mutation: markNotificationRead');
 		const notificationId = shapeIntoMongoObjectId(input);
 		return await this.notificationService.markNotificationRead(memberId, notificationId);
 	}
@@ -65,7 +62,6 @@ export class NotificationResolver {
 	@UseGuards(AuthGuard)
 	@Mutation(() => Boolean)
 	public async markAllNotificationsRead(@AuthMember('_id') memberId: mongoose.ObjectId): Promise<boolean> {
-		console.log('Mutation: markAllNotificationsRead');
 		return await this.notificationService.markAllNotificationsRead(memberId);
 	}
 
@@ -75,7 +71,6 @@ export class NotificationResolver {
 		@Args('notificationId') input: string,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Notification> {
-		console.log('Mutation: deleteNotification');
 		const notificationId = shapeIntoMongoObjectId(input);
 		return await this.notificationService.deleteNotification(memberId, notificationId);
 	}
@@ -86,7 +81,6 @@ export class NotificationResolver {
 	@UseGuards(RolesGuard)
 	@Query(() => Notifications)
 	public async getAllNotificationsByAdmin(@Args('input') input: AllNotificationsInquiry): Promise<Notifications> {
-		console.log('Query: getAllNotificationsByAdmin');
 		this.shapeAllNotificationsInquiry(input);
 		return await this.notificationService.getAllNotificationsByAdmin(input);
 	}

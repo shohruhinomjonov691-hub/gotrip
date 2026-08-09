@@ -25,6 +25,12 @@ export class NotificationInput {
 	@Field(() => String, { nullable: true })
 	notificationDesc?: string;
 
+	/** In-app destination for events with no derivable target id. */
+	@IsOptional()
+	@Length(1, 300)
+	@Field(() => String, { nullable: true })
+	notificationLink?: string;
+
 	@IsOptional()
 	@Field(() => String, { nullable: true })
 	authorId?: mongoose.ObjectId;

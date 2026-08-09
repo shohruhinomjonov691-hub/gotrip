@@ -62,6 +62,17 @@ export enum TourLocation {
 	MUYNOQ = 'MUYNOQ',
 	NAMI = 'NAMI',
 	SEORAKSAN = 'SEORAKSAN',
+	KYOTO = 'KYOTO',
+	ZERMATT = 'ZERMATT',
+	AMALFI = 'AMALFI',
+	GOREME = 'GOREME',
+	HALONG = 'HALONG',
+	CORTINA = 'CORTINA',
+	MARRAKECH = 'MARRAKECH',
+	PETRA = 'PETRA',
+	DUBROVNIK = 'DUBROVNIK',
+	LISBON = 'LISBON',
+	POKHARA = 'POKHARA',
 }
 registerEnumType(TourLocation, {
 	name: 'TourLocation',

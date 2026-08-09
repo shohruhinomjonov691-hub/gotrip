@@ -1,9 +1,80 @@
-import { Field, InputType, Int } from '@nestjs/graphql';
-import { ArrayNotEmpty, IsIn, IsInt, IsNotEmpty, IsOptional, Length, Max, Min } from 'class-validator';
+import { Field, Float, InputType, Int } from '@nestjs/graphql';
+import {
+	ArrayMaxSize,
+	ArrayNotEmpty,
+	IsEnum,
+	IsIn,
+	IsInt,
+	IsNotEmpty,
+	IsOptional,
+	IsString,
+	Length,
+	Max,
+	MaxLength,
+	Min,
+	ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { TourCategory, TourDifficulty, TourLanguage, TourLocation, TourStatus } from '../../enums/tour.enum';
+import { Locale } from '../../enums/locale.enum';
 import * as mongoose from 'mongoose';
 import { availableTourSorts } from '../../config';
 import { Direction } from '../../enums/common.enum';
+
+/**
+ * A guide/owner may hand-correct a per-locale override for their own tour
+ * (see TourService.updateTour, which scopes the write to the caller's own
+ * memberId — this DTO does not itself grant access to anyone else's tour).
+ * Same bounds as the base TourInput/TourUpdate fields these mirror, so a
+ * translation can't smuggle in a wildly oversized or malformed payload that
+ * the base field would have rejected outright.
+ */
+@InputType()
+export class TourTranslationInput {
+	@IsNotEmpty()
+	@IsEnum(Locale)
+	@Field(() => Locale)
+	locale: Locale;
+
+	@IsOptional()
+	@IsString()
+	@Length(3, 100)
+	@Field(() => String, { nullable: true })
+	tourTitle?: string;
+
+	@IsOptional()
+	@IsString()
+	@Length(5, 500)
+	@Field(() => String, { nullable: true })
+	tourDesc?: string;
+
+	@IsOptional()
+	@IsString()
+	@MaxLength(300)
+	@Field(() => String, { nullable: true })
+	tourMeetingPoint?: string;
+
+	@IsOptional()
+	@IsString({ each: true })
+	@MaxLength(300, { each: true })
+	@ArrayMaxSize(50)
+	@Field(() => [String], { nullable: true })
+	tourItinerary?: string[];
+
+	@IsOptional()
+	@IsString({ each: true })
+	@MaxLength(300, { each: true })
+	@ArrayMaxSize(50)
+	@Field(() => [String], { nullable: true })
+	tourIncluded?: string[];
+
+	@IsOptional()
+	@IsString({ each: true })
+	@MaxLength(300, { each: true })
+	@ArrayMaxSize(50)
+	@Field(() => [String], { nullable: true })
+	tourExcluded?: string[];
+}
 
 @InputType()
 export class TourInput {
@@ -60,6 +131,12 @@ export class TourInput {
 	tourDesc?: string;
 
 	@IsOptional()
+	@Min(0)
+	@Max(5)
+	@Field(() => Float, { nullable: true })
+	tourRating?: number;
+
+	@IsOptional()
 	@Field(() => [String], { nullable: true })
 	tourItinerary?: string[];
 
@@ -83,6 +160,22 @@ export class TourInput {
 	@Field(() => TourDifficulty, { nullable: true })
 	tourDifficulty?: TourDifficulty;
 
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	destinationId?: mongoose.ObjectId;
+
+	@IsOptional()
+	@ValidateNested({ each: true })
+	@Type(() => TourTranslationInput)
+	@Field(() => [TourTranslationInput], { nullable: true })
+	translations?: TourTranslationInput[];
+
+	// Set by the service from the auth token (not client-supplied — no @Field), but still
+	// needs at least one class-validator decorator: with whitelist+forbidNonWhitelisted, an
+	// undecorated class field is instantiated as an own `undefined` property
+	// (useDefineForClassFields) and gets rejected as "should not exist" even when the client
+	// never sent it. @IsOptional prevents that.
+	@IsOptional()
 	memberId?: mongoose.ObjectId;
 }
 
@@ -117,6 +210,10 @@ class PISearch {
 	@IsOptional()
 	@Field(() => [TourCategory], { nullable: true })
 	categoryList?: TourCategory[];
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	destinationId?: mongoose.ObjectId;
 
 	@IsOptional()
 	@Field(() => PricesRange, { nullable: true })

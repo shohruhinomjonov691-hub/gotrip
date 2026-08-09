@@ -2,11 +2,18 @@ import { BadRequestException, Injectable, InternalServerErrorException } from '@
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
 import { Member, Members } from '../../libs/dto/member/member';
-import { AgentsInquiry, LoginInput, MemberInput, MembersInquiry } from '../../libs/dto/member/member.input';
-import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
+import {
+	AgentRequestInput,
+	AgentsInquiry,
+	LoginInput,
+	MemberInput,
+	MemberSearchInquiry,
+	MembersInquiry,
+} from '../../libs/dto/member/member.input';
+import { AgentRequestStatus, MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { AuthService } from '../auth/auth.service';
-import { MemberUpdate } from '../../libs/dto/member/member.update';
+import { MemberAdminUpdate, MemberUpdate } from '../../libs/dto/member/member.update';
 import { ViewService } from '../view/view.service';
 import { StatisticModifier, T } from '../../libs/types/common';
 import { ViewGroup } from '../../libs/enums/view.enum';
@@ -16,6 +23,7 @@ import { LikeGroup } from '../../libs/enums/like.enum';
 import { Follower, Following, MeFollowed } from '../../libs/dto/follow/follow';
 import { escapeRegex, lookupAuthMemberLiked } from '../../libs/config';
 import { NotificationService } from '../notification/notification.service';
+import { AiTranslationService, TranslationEntryLike } from '../translation/ai-translation.service';
 
 @Injectable()
 export class MemberService {
@@ -26,7 +34,26 @@ export class MemberService {
 		private viewService: ViewService,
 		private likeService: LikeService,
 		private notificationService: NotificationService,
+		private aiTranslationService: AiTranslationService,
 	) {}
+
+	/**
+	 * Same pattern as NoticeService/TourService/BoardArticleService's
+	 * queueTranslation — memberDesc (the Guide/Agent "About" text) was the one
+	 * Member field never wired into the AI translation pipeline, which is why
+	 * it always rendered in whatever language it was written in regardless of
+	 * the traveller's selected locale.
+	 */
+	private queueTranslation(member: Member): void {
+		this.aiTranslationService.translateEntityAsync(this.memberModel, {
+			entityType: 'member',
+			entityId: member._id,
+			fields: {
+				memberDesc: member.memberDesc,
+			},
+			existingTranslations: member.translations as unknown as TranslationEntryLike[],
+		});
+	}
 
 	public async signup(input: MemberInput): Promise<Member> {
 		const { memberType: _memberType, ...signupInput } = input;
@@ -66,7 +93,7 @@ export class MemberService {
 	}
 
 	public async updateMember(memberId: ObjectId, input: MemberUpdate): Promise<Member> {
-		const { _id: _inputId, memberType: _memberType, memberStatus: _memberStatus, ...safeInput } = input;
+		const { _id: _inputId, ...safeInput } = input;
 		if (safeInput.memberPassword) {
 			safeInput.memberPassword = await this.authService.hashPassword(safeInput.memberPassword);
 		}
@@ -83,6 +110,7 @@ export class MemberService {
 			.exec();
 		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 
+		this.queueTranslation(result);
 		result.accessToken = await this.authService.createToken(result);
 		return result;
 	}
@@ -120,12 +148,19 @@ export class MemberService {
 	}
 
 	public async getAgents(memberId: ObjectId, input: AgentsInquiry): Promise<Members> {
-		const { text } = input.search;
+		const { text, languages, specialties, location } = input.search;
 		const match: T = { memberType: MemberType.AGENT, memberStatus: MemberStatus.ACTIVE };
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-		if (text) match.memberNick = { $regex: new RegExp(escapeRegex(text), 'i') };
-		console.log('match:', match);
+		// Keyword now covers the display name as well as the nickname — searching a guide by
+		// the name shown in the UI previously returned nothing.
+		if (text) {
+			const rx = { $regex: new RegExp(escapeRegex(text), 'i') };
+			match.$or = [{ memberNick: rx }, { memberFullName: rx }];
+		}
+		if (languages && languages.length) match.memberLanguages = { $in: languages };
+		if (specialties && specialties.length) match.memberSpecialties = { $in: specialties };
+		if (location) match.memberAddress = { $regex: new RegExp(escapeRegex(location), 'i') };
 
 		const result = await this.memberModel
 			.aggregate([
@@ -144,6 +179,46 @@ export class MemberService {
 			])
 			.exec();
 		if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+
+		return result[0];
+	}
+
+	/**
+	 * Directory search for starting a conversation.
+	 *
+	 * getAgents only returns AGENTs and getAllMembersByAdmin is ADMIN-only, so
+	 * neither can back "find any member to message". This keeps the same match
+	 * shape and escapeRegex handling as getAgents — it differs only in dropping
+	 * the memberType filter, excluding the caller, and omitting the like lookup
+	 * (irrelevant for a picker).
+	 *
+	 * ADMINs are excluded: staff accounts are not a messaging destination.
+	 */
+	public async searchMembers(memberId: ObjectId, input: MemberSearchInquiry): Promise<Members> {
+		const { text, memberType } = input;
+		const match: T = {
+			memberStatus: MemberStatus.ACTIVE,
+			_id: { $ne: memberId },
+			memberType: memberType ? memberType : { $in: [MemberType.USER, MemberType.AGENT] },
+		};
+
+		if (text) {
+			const rx = { $regex: new RegExp(escapeRegex(text), 'i') };
+			match.$or = [{ memberNick: rx }, { memberFullName: rx }];
+		}
+
+		const result = await this.memberModel
+			.aggregate([
+				{ $match: match },
+				{ $sort: { memberNick: 1 } },
+				{
+					$facet: {
+						list: [{ $skip: (input.page - 1) * input.limit }, { $limit: input.limit }],
+						metaCounter: [{ $count: 'total' }],
+					},
+				},
+			])
+			.exec();
 
 		return result[0];
 	}
@@ -172,14 +247,14 @@ export class MemberService {
 	}
 
 	public async getAllMembersByAdmin(input: MembersInquiry): Promise<Members> {
-		const { memberStatus, memberType, text } = input.search;
+		const { memberStatus, memberType, agentRequestStatus, text } = input.search;
 		const match: T = {};
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
 		if (memberStatus) match.memberStatus = memberStatus;
 		if (memberType) match.memberType = memberType;
+		if (agentRequestStatus) match.agentRequestStatus = agentRequestStatus;
 		if (text) match.memberNick = { $regex: new RegExp(escapeRegex(text), 'i') };
-		console.log('match:', match);
 
 		const result = await this.memberModel
 			.aggregate([
@@ -198,7 +273,7 @@ export class MemberService {
 		return result[0];
 	}
 
-	public async updateMemberByAdmin(input: MemberUpdate): Promise<Member> {
+	public async updateMemberByAdmin(input: MemberAdminUpdate): Promise<Member> {
 		const update: T = { ...input };
 		delete update._id;
 		if (update.memberPassword) {
@@ -209,6 +284,70 @@ export class MemberService {
 			.findOneAndUpdate({ _id: input._id }, update, { new: true })
 			.exec();
 		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+		this.queueTranslation(result);
+		return result;
+	}
+
+	/** GUIDE (AGENT) REQUEST WORKFLOW **/
+	/* USER -> requestAgentRole (PENDING) -> admin approve (AGENT) / reject (back to USER, REJECTED) */
+
+	public async requestAgentRole(memberId: ObjectId, input: AgentRequestInput): Promise<Member> {
+		const member = await this.memberModel.findOne({ _id: memberId, memberStatus: MemberStatus.ACTIVE }).exec();
+		if (!member) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		if (member.memberType !== MemberType.USER) {
+			throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
+		}
+		if (member.agentRequestStatus === AgentRequestStatus.PENDING) {
+			throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
+		}
+
+		const result = await this.memberModel
+			.findOneAndUpdate(
+				{ _id: memberId },
+				{
+					agentRequestStatus: AgentRequestStatus.PENDING,
+					agentRequestMessage: input.agentRequestMessage,
+					agentExperience: input.agentExperience,
+				},
+				{ new: true },
+			)
+			.exec();
+		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+		/* Fan out to ADMINs. Internally guarded, so a notification failure can
+		   never fail the application itself — the same contract the existing
+		   follow / like / comment call sites rely on. */
+		await this.notificationService.notifyGuideRequestSubmitted(result._id, result.memberNick);
+		return result;
+	}
+
+	public async getAgentRequestsByAdmin(input: MembersInquiry): Promise<Members> {
+		if (!input.search.agentRequestStatus) input.search.agentRequestStatus = AgentRequestStatus.PENDING;
+		return this.getAllMembersByAdmin(input);
+	}
+
+	public async approveAgentRequestByAdmin(memberId: ObjectId): Promise<Member> {
+		const result = await this.memberModel
+			.findOneAndUpdate(
+				{ _id: memberId, agentRequestStatus: AgentRequestStatus.PENDING },
+				{ memberType: MemberType.AGENT, agentRequestStatus: AgentRequestStatus.APPROVED },
+				{ new: true },
+			)
+			.exec();
+		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+		await this.notificationService.notifyGuideRequestApproved(result._id);
+		return result;
+	}
+
+	public async rejectAgentRequestByAdmin(memberId: ObjectId): Promise<Member> {
+		const result = await this.memberModel
+			.findOneAndUpdate(
+				{ _id: memberId, agentRequestStatus: AgentRequestStatus.PENDING },
+				{ agentRequestStatus: AgentRequestStatus.REJECTED },
+				{ new: true },
+			)
+			.exec();
+		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+		await this.notificationService.notifyGuideRequestRejected(result._id);
 		return result;
 	}
 

@@ -30,7 +30,6 @@ export class TourResolver {
 		@Args('input') input: TourInput,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Tour> {
-		console.log('Mutation: createTour');
 		return await this.tourService.createTour(memberId, input);
 	}
 
@@ -40,7 +39,6 @@ export class TourResolver {
 		@Args('tourId') input: string,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Tour> {
-		console.log('Query: getTour');
 		const tourId = shapeIntoMongoObjectId(input);
 		return await this.tourService.getTour(memberId, tourId);
 	}
@@ -52,7 +50,6 @@ export class TourResolver {
 		@Args('input') input: TourUpdate,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Tour> {
-		console.log('Mutation: updateTour');
 		input._id = shapeIntoMongoObjectId(input._id);
 		return await this.tourService.updateTour(memberId, input);
 	}
@@ -63,7 +60,6 @@ export class TourResolver {
 		@Args('input') input: ToursInquiry,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Tours> {
-		console.log('Query: getTours');
 		return await this.tourService.getTours(memberId, input);
 	}
 
@@ -73,7 +69,6 @@ export class TourResolver {
 		@Args('input') input: OrdinaryInquiry,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Tours> {
-		console.log('Query: getFavorites');
 		return await this.tourService.getFavorites(memberId, input);
 	}
 
@@ -83,7 +78,6 @@ export class TourResolver {
 		@Args('input') input: OrdinaryInquiry,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Tours> {
-		console.log('Query: getVisited');
 		return await this.tourService.getVisited(memberId, input);
 	}
 
@@ -94,7 +88,6 @@ export class TourResolver {
 		@Args('input') input: AgentToursInquiry,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Tours> {
-		console.log('Query: getAgentTours');
 		return await this.tourService.getAgentTours(memberId, input);
 	}
 
@@ -104,7 +97,6 @@ export class TourResolver {
 		@Args('tourId') input: string,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Tour> {
-		console.log('Mutation: likeTargetTour');
 		const likeRefId = shapeIntoMongoObjectId(input);
 		return await this.tourService.likeTargetTour(memberId, likeRefId);
 	}
@@ -118,7 +110,6 @@ export class TourResolver {
 		@Args('input') input: AllToursInquiry,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Tours> {
-		console.log('Query: getAllToursByAdmin');
 		return await this.tourService.getAllToursByAdmin(input);
 	}
 
@@ -126,7 +117,6 @@ export class TourResolver {
 	@UseGuards(RolesGuard)
 	@Mutation((returns) => Tour)
 	public async updateTourByAdmin(@Args('input') input: TourUpdate): Promise<Tour> {
-		console.log('Mutation: updateTourByAdmin');
 		input._id = shapeIntoMongoObjectId(input._id);
 		return await this.tourService.updateTourByAdmin(input);
 	}
@@ -135,7 +125,6 @@ export class TourResolver {
 	@UseGuards(RolesGuard)
 	@Mutation((returns) => Tour)
 	public async removeTourByAdmin(@Args('tourId') input: string): Promise<Tour> {
-		console.log('Mutation: removeTourByAdmin');
 		const tourId = shapeIntoMongoObjectId(input);
 		return await this.tourService.removeTourByAdmin(tourId);
 	}

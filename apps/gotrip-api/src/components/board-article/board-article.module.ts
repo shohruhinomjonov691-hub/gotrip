@@ -8,6 +8,7 @@ import { ViewModule } from '../view/view.module';
 import { MemberModule } from '../member/member.module';
 import { LikeModule } from '../like/like.module';
 import { NotificationModule } from '../notification/notification.module';
+import { TranslationModule } from '../translation/translation.module';
 
 @Module({
 	imports: [
@@ -22,6 +23,7 @@ import { NotificationModule } from '../notification/notification.module';
 		ViewModule,
 		LikeModule,
 		NotificationModule,
+		TranslationModule,
 	],
 	providers: [BoardArticleResolver, BoardArticleService],
 	exports: [BoardArticleService],

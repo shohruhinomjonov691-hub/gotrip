@@ -8,6 +8,8 @@ import { ViewModule } from '../view/view.module';
 import { MemberModule } from '../member/member.module';
 import { LikeModule } from '../like/like.module';
 import { NotificationModule } from '../notification/notification.module';
+import { DestinationModule } from '../destination/destination.module';
+import { TranslationModule } from '../translation/translation.module';
 
 @Module({
 	imports: [
@@ -22,6 +24,8 @@ import { NotificationModule } from '../notification/notification.module';
 		MemberModule,
 		LikeModule,
 		NotificationModule,
+		DestinationModule,
+		TranslationModule,
 	],
 	providers: [TourResolver, TourService],
 	exports: [TourService],

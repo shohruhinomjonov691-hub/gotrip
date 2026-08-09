@@ -6,6 +6,12 @@ export enum NotificationType {
 	LIKE_CREATED = 'LIKE_CREATED',
 	FOLLOW_CREATED = 'FOLLOW_CREATED',
 	ADMIN_NOTICE = 'ADMIN_NOTICE',
+	/* Guide (agent) application lifecycle. GUIDE_REQUEST fans out to every ADMIN;
+	   the two outcomes go back to the single applicant. */
+	GUIDE_REQUEST = 'GUIDE_REQUEST',
+	GUIDE_APPROVED = 'GUIDE_APPROVED',
+	GUIDE_REJECTED = 'GUIDE_REJECTED',
+	MESSAGE_RECEIVED = 'MESSAGE_RECEIVED',
 }
 registerEnumType(NotificationType, {
 	name: 'NotificationType',

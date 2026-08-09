@@ -8,18 +8,21 @@ describe('BoardArticleService.likeTargetBoardArticle', () => {
 	let boardArticleModel: { findOne: jest.Mock };
 	let likeService: { toggleLike: jest.Mock };
 	let notificationService: { notifyLikeCreated: jest.Mock };
+	let aiTranslationService: { translateEntityAsync: jest.Mock };
 	let service: BoardArticleService;
 
 	beforeEach(() => {
 		boardArticleModel = { findOne: jest.fn() };
 		likeService = { toggleLike: jest.fn() };
 		notificationService = { notifyLikeCreated: jest.fn() };
+		aiTranslationService = { translateEntityAsync: jest.fn() };
 		service = new BoardArticleService(
 			boardArticleModel as any,
 			{} as any,
 			{} as any,
 			likeService as any,
 			notificationService as any,
+			aiTranslationService as any,
 		);
 	});
 

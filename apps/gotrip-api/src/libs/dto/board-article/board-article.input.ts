@@ -4,6 +4,22 @@ import * as mongoose from 'mongoose';
 import { BoardArticleCategory, BoardArticleStatus } from '../../enums/board-article.enum';
 import { Direction } from '../../enums/common.enum';
 import { availableBoardArticleSorts } from '../../config';
+import { Locale } from '../../enums/locale.enum';
+
+@InputType()
+export class BoardArticleTranslationInput {
+	@IsNotEmpty()
+	@Field(() => Locale)
+	locale: Locale;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	articleTitle?: string;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	articleContent?: string;
+}
 
 @InputType()
 export class BoardArticleInput {
@@ -12,12 +28,12 @@ export class BoardArticleInput {
 	articleCategory: BoardArticleCategory;
 
 	@IsNotEmpty()
-	@Length(3, 50)
+	@Length(3, 120)
 	@Field(() => String)
 	articleTitle: string;
 
 	@IsNotEmpty()
-	@Length(3, 250)
+	@Length(3, 20000)
 	@Field(() => String)
 	articleContent: string;
 
@@ -25,6 +41,20 @@ export class BoardArticleInput {
 	@Field(() => String, { nullable: true })
 	articleImage?: string;
 
+	@IsOptional()
+	@Field(() => [String], { nullable: true })
+	articleImages?: string[];
+
+	@IsOptional()
+	@Field(() => [BoardArticleTranslationInput], { nullable: true })
+	translations?: BoardArticleTranslationInput[];
+
+	// Set by the service from the auth token (not client-supplied — no @Field), but still
+	// needs at least one class-validator decorator: with whitelist+forbidNonWhitelisted, an
+	// undecorated class field is instantiated as an own `undefined` property
+	// (useDefineForClassFields) and gets rejected as "should not exist" even when the client
+	// never sent it. @IsOptional prevents that.
+	@IsOptional()
 	memberId?: mongoose.ObjectId;
 }
 

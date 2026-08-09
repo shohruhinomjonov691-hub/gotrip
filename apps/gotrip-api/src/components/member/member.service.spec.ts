@@ -19,6 +19,9 @@ describe('MemberService profile hardening', () => {
 	let notificationService: {
 		notifyLikeCreated: jest.Mock;
 	};
+	let aiTranslationService: {
+		translateEntityAsync: jest.Mock;
+	};
 	let service: MemberService;
 
 	beforeEach(() => {
@@ -36,6 +39,9 @@ describe('MemberService profile hardening', () => {
 		notificationService = {
 			notifyLikeCreated: jest.fn(),
 		};
+		aiTranslationService = {
+			translateEntityAsync: jest.fn(),
+		};
 		service = new MemberService(
 			memberModel as any,
 			{} as any,
@@ -43,10 +49,11 @@ describe('MemberService profile hardening', () => {
 			{} as any,
 			likeService as any,
 			notificationService as any,
+			aiTranslationService as any,
 		);
 	});
 
-	it('hashes regular password updates and strips self role/status changes', async () => {
+	it('hashes regular password updates (MemberUpdate has no role/status field to escalate)', async () => {
 		const memberId = new Types.ObjectId();
 		const updatedMember = { _id: memberId, memberType: MemberType.USER, memberStatus: MemberStatus.ACTIVE };
 
@@ -57,8 +64,6 @@ describe('MemberService profile hardening', () => {
 		const result = await service.updateMember(memberId as any, {
 			_id: memberId as any,
 			memberPassword: 'plain1',
-			memberType: MemberType.ADMIN,
-			memberStatus: MemberStatus.BLOCK,
 			memberNick: 'traveler',
 		});
 

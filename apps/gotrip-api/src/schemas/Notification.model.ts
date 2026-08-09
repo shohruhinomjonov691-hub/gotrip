@@ -30,6 +30,20 @@ const NotificationSchema = new Schema(
 			type: String,
 		},
 
+		/**
+		 * Optional in-app destination for notifications whose target cannot be
+		 * derived from the ids below.
+		 *
+		 * Content notifications (like / comment) already resolve their destination
+		 * from notificationGroup + tourId/articleId/commentId, so they leave this
+		 * empty. Guide-application and message events have no such id, so the
+		 * producer stores the route here instead. One nullable string was chosen
+		 * over adding a column per future target type.
+		 */
+		notificationLink: {
+			type: String,
+		},
+
 		authorId: {
 			type: Schema.Types.ObjectId,
 			ref: 'Member',

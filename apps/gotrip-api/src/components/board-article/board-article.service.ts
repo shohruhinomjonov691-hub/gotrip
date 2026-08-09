@@ -13,12 +13,20 @@ import { Direction, Message } from '../../libs/enums/common.enum';
 import { StatisticModifier, T } from '../../libs/types/common';
 import { BoardArticleStatus } from '../../libs/enums/board-article.enum';
 import { ViewGroup } from '../../libs/enums/view.enum';
-import { BoardArticleUpdate } from '../../libs/dto/board-article/board-article.update';
-import { lookupAuthMemberLiked, lookupMember, shapeIntoMongoObjectId } from '../../libs/config';
+import { BoardArticleModerationUpdate, BoardArticleUpdate } from '../../libs/dto/board-article/board-article.update';
+import {
+	addReadersFields,
+	escapeRegex,
+	lookupArticleReaders,
+	lookupAuthMemberLiked,
+	lookupMember,
+	shapeIntoMongoObjectId,
+} from '../../libs/config';
 import { LikeService } from '../like/like.service';
 import { LikeInput } from '../../libs/dto/like/like.input';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { NotificationService } from '../notification/notification.service';
+import { AiTranslationService, TranslationEntryLike } from '../translation/ai-translation.service';
 
 @Injectable()
 export class BoardArticleService {
@@ -28,7 +36,20 @@ export class BoardArticleService {
 		private viewService: ViewService,
 		private likeService: LikeService,
 		private notificationService: NotificationService,
+		private aiTranslationService: AiTranslationService,
 	) {}
+
+	private queueTranslation(article: BoardArticle): void {
+		this.aiTranslationService.translateEntityAsync(this.boardArticleModel, {
+			entityType: 'article',
+			entityId: article._id,
+			fields: {
+				articleTitle: article.articleTitle,
+				articleContent: article.articleContent,
+			},
+			existingTranslations: article.translations as unknown as TranslationEntryLike[],
+		});
+	}
 
 	public async createBoardArticle(memberId: ObjectId, input: BoardArticleInput): Promise<BoardArticle> {
 		input.memberId = memberId;
@@ -39,6 +60,7 @@ export class BoardArticleService {
 				targetKey: 'memberArticles',
 				modifier: 1,
 			});
+			this.queueTranslation(result);
 			return result;
 		} catch (err) {
 			console.log('Error, Service. model:', err);
@@ -86,8 +108,11 @@ export class BoardArticleService {
 				targetKey: 'memberArticles',
 				modifier: -1,
 			});
+		} else {
+			// A deleted article is never shown again, so translating it would be a
+			// wasted provider call — only queue translation for edits that keep it live.
+			this.queueTranslation(result);
 		}
-
 		return result;
 	}
 
@@ -97,11 +122,10 @@ export class BoardArticleService {
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
 		if (articleCategory) match.articleCategory = articleCategory;
-		if (text) match.articleTitle = { $regex: new RegExp(text, 'i') };
+		if (text) match.articleTitle = { $regex: new RegExp(escapeRegex(text), 'i') };
 		if (input.search?.memberId) {
 			match.memberId = shapeIntoMongoObjectId(input.search.memberId);
 		}
-		console.log('match:', match);
 
 		const result = await this.boardArticleModel
 			.aggregate([
@@ -115,6 +139,9 @@ export class BoardArticleService {
 							lookupAuthMemberLiked(memberId, '$_id', LikeGroup.ARTICLE), // meLiked
 							lookupMember,
 							{ $unwind: '$memberData' },
+							lookupArticleReaders('$_id'),
+							addReadersFields,
+							{ $project: { allReaders: 0 } },
 						],
 						metaCounter: [{ $count: 'total' }],
 					},
@@ -185,7 +212,7 @@ export class BoardArticleService {
 		return result[0];
 	}
 
-	public async updateBoardArticleByAdmin(input: BoardArticleUpdate): Promise<BoardArticle> {
+	public async updateBoardArticleByAdmin(input: BoardArticleModerationUpdate): Promise<BoardArticle> {
 		const { _id, articleStatus } = input;
 
 		const result = await this.boardArticleModel

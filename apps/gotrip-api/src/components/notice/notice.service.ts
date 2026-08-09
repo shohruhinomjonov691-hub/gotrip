@@ -9,13 +9,27 @@ import { NoticeStatus } from '../../libs/enums/notice.enum';
 import { T } from '../../libs/types/common';
 import { escapeRegex } from '../../libs/config';
 import { NotificationService } from '../notification/notification.service';
+import { AiTranslationService, TranslationEntryLike } from '../translation/ai-translation.service';
 
 @Injectable()
 export class NoticeService {
 	constructor(
 		@InjectModel('Notice') private readonly noticeModel: Model<Notice>,
 		private notificationService: NotificationService,
+		private aiTranslationService: AiTranslationService,
 	) {}
+
+	private queueTranslation(notice: Notice): void {
+		this.aiTranslationService.translateEntityAsync(this.noticeModel, {
+			entityType: 'notice',
+			entityId: notice._id,
+			fields: {
+				noticeTitle: notice.noticeTitle,
+				noticeContent: notice.noticeContent,
+			},
+			existingTranslations: notice.translations as unknown as TranslationEntryLike[],
+		});
+	}
 
 	public async getNotices(input: NoticesInquiry): Promise<Notices> {
 		const match: T = { noticeStatus: NoticeStatus.ACTIVE };
@@ -49,6 +63,7 @@ export class NoticeService {
 				memberId,
 			});
 			await this.notificationService.notifyAdminNoticeCreated(notice);
+			this.queueTranslation(notice);
 			return notice;
 		} catch (err) {
 			console.log('Error, Service.model:', err);
@@ -69,6 +84,7 @@ export class NoticeService {
 			.exec();
 		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 
+		this.queueTranslation(result);
 		return result;
 	}
 

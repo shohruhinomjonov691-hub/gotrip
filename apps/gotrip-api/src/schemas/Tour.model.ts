@@ -1,5 +1,18 @@
 import { Schema } from 'mongoose';
 import { TourCategory, TourDifficulty, TourLanguage, TourLocation, TourStatus } from '../libs/enums/tour.enum';
+import { buildTranslationSchema } from '../libs/utils/translation.util';
+
+// One entry per locale that has been translated; a locale with no entry (or an
+// entry missing a given field) simply falls back to the base field above —
+// see libs/utils/translation.util.ts and the frontend's getLocalizedField().
+const TourTranslationSchema = buildTranslationSchema({
+	tourTitle: { type: String },
+	tourDesc: { type: String },
+	tourMeetingPoint: { type: String },
+	tourItinerary: { type: [String] },
+	tourIncluded: { type: [String] },
+	tourExcluded: { type: [String] },
+});
 
 const TourSchema = new Schema(
 	{
@@ -71,6 +84,12 @@ const TourSchema = new Schema(
 			default: 0,
 		},
 
+		tourRating: {
+			type: Number,
+			min: 0,
+			max: 5,
+		},
+
 		tourImages: {
 			type: [String],
 			required: true,
@@ -115,12 +134,26 @@ const TourSchema = new Schema(
 			ref: 'Member',
 		},
 
+		// Optional: lets an agent group a tour under a curated Destination page.
+		// Tours remain fully discoverable via tourLocation even when unset.
+		destinationId: {
+			type: Schema.Types.ObjectId,
+			ref: 'Destination',
+		},
+
+		translations: {
+			type: [TourTranslationSchema],
+			default: [],
+		},
+
 		deletedAt: {
 			type: Date,
 		},
 	},
 	{ timestamps: true, collection: 'tours' },
 );
+
+TourSchema.index({ destinationId: 1 });
 
 TourSchema.index(
 	{ memberId: 1, tourCategory: 1, tourLocation: 1, tourTitle: 1, tourPrice: 1 },

@@ -19,14 +19,12 @@ export class NoticeResolver {
 	@UseGuards(WithoutGuard)
 	@Query(() => Notices)
 	public async getNotices(@Args('input') input: NoticesInquiry): Promise<Notices> {
-		console.log('Query: getNotices');
 		return await this.noticeService.getNotices(input);
 	}
 
 	@UseGuards(WithoutGuard)
 	@Query(() => Notice)
 	public async getNotice(@Args('noticeId') input: string): Promise<Notice> {
-		console.log('Query: getNotice');
 		const noticeId = shapeIntoMongoObjectId(input);
 		return await this.noticeService.getNotice(noticeId);
 	}
@@ -37,7 +35,6 @@ export class NoticeResolver {
 	@UseGuards(RolesGuard)
 	@Query(() => Notices)
 	public async getAllNoticesByAdmin(@Args('input') input: AllNoticesInquiry): Promise<Notices> {
-		console.log('Query: getAllNoticesByAdmin');
 		return await this.noticeService.getAllNoticesByAdmin(input);
 	}
 
@@ -48,7 +45,6 @@ export class NoticeResolver {
 		@Args('input') input: NoticeInput,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<Notice> {
-		console.log('Mutation: createNoticeByAdmin');
 		return await this.noticeService.createNoticeByAdmin(memberId, input);
 	}
 
@@ -56,7 +52,6 @@ export class NoticeResolver {
 	@UseGuards(RolesGuard)
 	@Mutation(() => Notice)
 	public async updateNoticeByAdmin(@Args('input') input: NoticeUpdate): Promise<Notice> {
-		console.log('Mutation: updateNoticeByAdmin');
 		input._id = shapeIntoMongoObjectId(input._id);
 		return await this.noticeService.updateNoticeByAdmin(input);
 	}
@@ -65,7 +60,6 @@ export class NoticeResolver {
 	@UseGuards(RolesGuard)
 	@Mutation(() => Notice)
 	public async deleteNoticeByAdmin(@Args('noticeId') input: string): Promise<Notice> {
-		console.log('Mutation: deleteNoticeByAdmin');
 		const noticeId = shapeIntoMongoObjectId(input);
 		return await this.noticeService.deleteNoticeByAdmin(noticeId);
 	}

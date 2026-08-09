@@ -1,8 +1,44 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
 import * as mongoose from 'mongoose';
-import { MemberAuthType, MemberStatus, MemberType } from '../../enums/member.enum';
+import { AgentRequestStatus, MemberAuthType, MemberStatus, MemberType } from '../../enums/member.enum';
+import { TourCategory, TourLanguage } from '../../enums/tour.enum';
+import { Locale } from '../../enums/locale.enum';
 import { MeLiked } from '../like/like';
 import { MeFollowed } from '../follow/follow';
+
+/**
+ * One locale's translated override for a Member's free-text bio
+ * (`memberDesc` — the Guide/Agent "About" section, and the same field a
+ * BoardArticle author's info panel reads). Mirrors NoticeTranslation/
+ * TourTranslation exactly — same AiTranslationService pipeline, just a new
+ * content type registered with it.
+ */
+@ObjectType()
+export class MemberTranslation {
+	@Field(() => Locale)
+	locale: Locale;
+
+	@Field(() => String, { nullable: true })
+	memberDesc?: string;
+}
+
+@ObjectType()
+export class MemberSocial {
+	@Field(() => String, { nullable: true })
+	facebook?: string;
+
+	@Field(() => String, { nullable: true })
+	twitter?: string;
+
+	@Field(() => String, { nullable: true })
+	linkedin?: string;
+
+	@Field(() => String, { nullable: true })
+	youtube?: string;
+
+	@Field(() => String, { nullable: true })
+	instagram?: string;
+}
 
 @ObjectType()
 export class Member {
@@ -70,6 +106,30 @@ export class Member {
 
 	@Field(() => Int)
 	memberBlocks: number;
+
+	@Field(() => AgentRequestStatus)
+	agentRequestStatus: AgentRequestStatus;
+
+	@Field(() => String, { nullable: true })
+	agentRequestMessage?: string;
+
+	@Field(() => String, { nullable: true })
+	agentExperience?: string;
+
+	@Field(() => String, { nullable: true })
+	memberCoverImage?: string;
+
+	@Field(() => [TourLanguage], { nullable: true })
+	memberLanguages?: TourLanguage[];
+
+	@Field(() => [TourCategory], { nullable: true })
+	memberSpecialties?: TourCategory[];
+
+	@Field(() => MemberSocial, { nullable: true })
+	memberSocial?: MemberSocial;
+
+	@Field(() => [MemberTranslation], { nullable: true })
+	translations?: MemberTranslation[];
 
 	@Field(() => Date, { nullable: true })
 	deletedAt?: Date;

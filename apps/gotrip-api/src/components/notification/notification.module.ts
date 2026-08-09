@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { NotificationResolver } from './notification.resolver';
 import { NotificationService } from './notification.service';
@@ -8,6 +8,7 @@ import TourSchema from '../../schemas/Tour.model';
 import BoardArticleSchema from '../../schemas/BoardArticle.model';
 import MemberSchema from '../../schemas/Member.model';
 import { AuthModule } from '../auth/auth.module';
+import { MessageModule } from '../message/message.module';
 
 @Module({
 	imports: [
@@ -19,6 +20,11 @@ import { AuthModule } from '../auth/auth.module';
 			{ name: 'Member', schema: MemberSchema },
 		]),
 		AuthModule,
+		/* A tour inquiry (contactAgent) delivers its first message through
+		   MessageService — see the note on that method. MessageModule imports
+		   NotificationModule too (chat messages notify their receiver), so this
+		   side must also use forwardRef. */
+		forwardRef(() => MessageModule),
 	],
 	providers: [NotificationResolver, NotificationService],
 	exports: [NotificationService],
