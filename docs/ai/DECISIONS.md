@@ -58,3 +58,22 @@ Superseded entries above:
 - "Use Wishlist for saved tours" (Compatibility Principles / Decision Log) no longer applies.
 - "Add ERD collection schemas now" no longer applies.
 - "Booking workflow is staged" no longer applies; there is no booking workflow.
+
+## 2026-07-24 - Destination Re-added as Content/Catalog Only (Booking/Payment/Schedule Still Out of Scope)
+
+| Decision | Why It Was Made | Risk | Alternative Considered |
+| --- | --- | --- | --- |
+| Re-add `Destination` as an admin-managed catalog/content collection (title, gallery, stats) | The frontend's own design docs and the upcoming home-page/data-seeding task need real destination content; the 2026-07-19 removal was specifically about the booking/payment/schedule lifecycle, not destination content itself. | None to existing data/APIs — new collection, `Tour.destinationId` is optional/nullable. | Keep Destination purely as the `TourLocation` enum (status quo); rejected because it can't carry images/description/gallery/admin curation, which the seeding task needs. |
+| Add `Category` and `Testimonial` as new admin-managed collections | Neither existed before in any form (not even as a removed ERD collection); both were hardcoded client-side with zero backend presence. Needed for admin-manageable homepage content. | None — fully additive, doesn't touch `TourCategory`/`BoardArticleCategory` enums or existing filtering. | — |
+| Booking, Payment, and TourSchedule remain out of scope | This pass only restores destination *content*, not the reservation/payment lifecycle. Nothing in this pass reads or writes those collections. | None. | — |
+
+This supersedes the "Unused MongoDB collections remain" open risk below **only for `destinations`** — that collection now has live application code again (a fresh, additively-designed schema, not a resurrection of the old removed one). `bookings`, `payments`, `tourSchedules`, and `wishlists` remain unused/out of scope.
+
+## 2026-07-24 - Destination Ownership + Guide Request Workflow (Same-Day Follow-Up)
+
+| Decision | Why It Was Made | Risk | Alternative Considered |
+| --- | --- | --- | --- |
+| ~~Destination is admin-managed content with no owner~~ **SUPERSEDED same day.** `Destination.memberId` is now required — exactly one owning Guide (`MemberType.AGENT`), validated server-side. | An explicit business rule requires "each Destination has exactly one Guide owner" and "a Guide can create Tours only inside Destinations they own." | A guide who is later demoted/blocked leaves their destinations "orphaned" (still valid documents, but the owner can no longer act as an agent) — no reassignment-on-demotion automation exists yet; an admin must manually reassign via `updateDestinationByAdmin`. | Auto-reassign or auto-hide a destination when its owner is demoted — rejected as unrequested scope; admin can already reassign `memberId` manually. |
+| Destination CRUD (create/update/delete) stays admin-only; guides do not self-manage destinations | The business rule specifies ownership for *tour placement*, not a self-service destination-authoring flow. | If guides are later expected to create their own destinations, this will need a new self-service resolver path (not just a field). | Let guides create their own destinations directly — rejected as not requested; would also need its own moderation/approval story. |
+| Add a formal `AgentRequestStatus` state machine (`NONE/PENDING/APPROVED/REJECTED`) instead of relying solely on `updateMemberByAdmin` | The business rule requires an explicit `USER → PENDING → ADMIN approval → AGENT` flow, not just "admin can set memberType." | `updateMemberByAdmin` still allows a direct admin override outside the request flow (unchanged, intentional — admins retain broad power). | Remove admin's direct override entirely, forcing all promotions through the request flow — rejected; admins commonly need to act without waiting on a member-initiated request (e.g., onboarding a partner agent). |
+| Testimonial status renamed `ACTIVE/HOLD/DELETE` → `PENDING/APPROVED/REJECTED/DELETE`, with a new self-service `createTestimonial` | The business rule requires user-submitted testimonials to default PENDING and only show publicly once APPROVED — the first pass only had admin-curated, pre-approved testimonials. | None — Testimonial had no seeded data yet. | — |

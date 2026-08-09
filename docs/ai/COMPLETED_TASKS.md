@@ -703,3 +703,43 @@ Validation: API and batch `tsc --noEmit`, `npm run build`, `jest` (15 tests), an
 - `tourImages` gets `@ArrayNotEmpty()`, so a tour can no longer be created with an empty image list.
 
 Validation: API and batch `tsc --noEmit`, `npm run build`, `jest` (15 tests), and a runtime bootstrap all passed.
+
+## 2026-07-24 - Backend Foundation Pass for Home-Page Replication + Data Seeding
+
+Added the catalog/content entities the frontend's own design docs already assumed but the API never exposed, closed two real gaps on Article, and applied the security items flagged by a full audit — all additive, no existing operation renamed or removed.
+
+New modules (all follow the existing `module/resolver/service` + 3-file DTO pattern):
+- **Category** (`components/category/*`) — admin-managed metadata (name, desc, image, icon, order) layered on top of the existing `TourCategory`/`BoardArticleCategory` enums; the enums and `Tour.tourCategory`/`BoardArticle.articleCategory` fields are untouched, so existing filtering keeps working unchanged. `getCategories` public, `create/update/deleteCategoryByAdmin` + `getAllCategoriesByAdmin` admin-only.
+- **Destination** (`components/destination/*`) — admin-managed catalog content (title, gallery, thumbnail, country/city, optional coordinates, optional `locationKey: TourLocation` so `getTours({locationList:[locationKey]})` populates "tours here" with zero migration). View-tracked (reuses the previously-unused `ViewGroup.DESTINATION`) and likeable (`LikeGroup.DESTINATION` added). `tourCount` is computed via aggregation, not a stored counter. `Tour` gained an optional, nullable `destinationId` ref — no existing tour document requires a value. This is content/catalog only; it does not reintroduce Booking/Payment/TourSchedule, which stay out of scope per the 2026-07-19 decision below.
+- **Testimonial** (`components/testimonial/*`) — small admin-curated entity (quote, optional rating 1-5, author name/role/image, optional `memberId`/`tourId`). Distinct from and does not replace the "reviews are Comments" pattern used elsewhere.
+
+Article (`BoardArticle`) fixes:
+- `articleContent` max length raised from 250 to 20000 chars (was far too short to be "an article").
+- Added `articleImages?: string[]` gallery field alongside the existing single `articleImage` (kept for compatibility).
+- `updateBoardArticleByAdmin` now takes a new `BoardArticleModerationUpdate` DTO (`_id` + `articleStatus` only) instead of the full update shape — an admin can no longer edit another member's article title/content/images, only moderate its status. This is enforced by the type system, not a runtime check.
+- Missed regex-escape closed: `getBoardArticles`' free-text search now uses `escapeRegex` like every other domain (it was the one search call site the 2026-07-19 hardening pass missed).
+
+Security items closed:
+- Socket auth gap: `SocketGateway.retrieveAuth` now calls `AuthService.retrieveAuthMember` (DB-backed, checks block/delete) instead of `verifyToken` (signature-only) — a blocked/deleted member can no longer join chat on a stale token.
+- Upload hardening: `validImageTargets` extended for the 3 new entities (Guide reuses `member`); uploads are now content-verified against real file-signature bytes (`verifyImageSignature`), not just the client-declared mimetype; upload target directories are created on demand instead of assumed to pre-exist.
+- Env validation: `ConfigModule.forRoot({ validate: validateEnv })` now fails fast at boot if `SECRET_TOKEN` or the relevant `MONGO_DEV`/`MONGO_PROD` is missing, instead of silently signing JWTs with `"undefined"`.
+- Rate limiting: `@nestjs/throttler` added globally (120 req/min default) with a tighter override on `signup`/`login`.
+- `helmet` added (CSP relaxed outside production so GraphQL Playground still works in dev).
+- `ValidationPipe` now sets `whitelist`/`forbidNonWhitelisted`/`transform`.
+- `MemberUpdate` (self-service) no longer has a `memberType`/`memberStatus` field at all — a new `MemberAdminUpdate` DTO (extends it) is the only place those fields exist, used only by `updateMemberByAdmin`. Same "policy enforced by the type, not by remembering to strip fields" fix as the Article one above.
+
+Also: added the `BoardArticle{articleCategory,memberId}` and `Notice{noticeCategory}` indexes the audit flagged as missing; extended `gotrip-batch` with `batchTopDestinations()` (same weighted-rank pattern as tours/agents) and zeroed `destinationRank` in `batchRollback`.
+
+Validation: API and batch `tsc --noEmit`, `npm run build` (both apps), `jest` (15 tests, one self-update test adjusted to match the new `MemberUpdate` shape), and a runtime bootstrap (Nest started, MongoDB connected, GraphQL schema built and mapped `/graphql`) all passed. One real issue caught only by the runtime bootstrap (not by `tsc`): `CategoryInput`'s inner `CISearch` class collided with `CommentInput`'s existing `CISearch` at the GraphQL type-name level (class names double as GraphQL type names by default) — renamed to `CategorySearch`/`AdminCategorySearch`.
+
+## 2026-07-24 - Business-Rule Verification Pass: Guide Requests, Destination Ownership, Testimonial Moderation
+
+A follow-up same-day pass, prompted by an explicit business-rule checklist, that found and closed three real gaps the first pass left open:
+
+- **Guide (Agent) request workflow, previously missing entirely.** `signup` already forced `MemberType.USER` (unchanged), but there was no formal request/approval path to become an `AGENT` — only a direct admin override via `updateMemberByAdmin`. Added `AgentRequestStatus` (`NONE/PENDING/APPROVED/REJECTED`) + `agentRequestMessage`/`agentExperience` on `Member`; self-service `requestAgentRole` (USER-only, rejects if already requested/already an agent); admin `getAgentRequestsByAdmin` (defaults to `PENDING`), `approveAgentRequestByAdmin` (sets `AGENT`), `rejectAgentRequestByAdmin`. `updateMemberByAdmin`'s direct-override power is intentionally left intact — admins can still promote directly; the request flow is the *self-service* path, not the only path.
+- **Destination ownership, previously absent by design.** The first pass deliberately made `Destination` admin-managed content with no owner (matching Category/Notice). This pass reverses that: `Destination.memberId` is now required (exactly one owning Guide), validated server-side to be a real `MemberType.AGENT` on create/reassign. `TourService.createTour`/`updateTour` now call `DestinationService.assertDestinationOwnership` whenever `destinationId` is set, so a guide can only place/move a tour into a destination they own — cross-guide tour creation in another guide's destination now throws `ForbiddenException`. `getDestinations`/`getDestination`/`getAllDestinationsByAdmin` also gained `memberData` (the owning guide's profile).
+- **Testimonial moderation, previously a flat admin-only list.** `TestimonialStatus` changed from `ACTIVE/HOLD/DELETE` to `PENDING/APPROVED/REJECTED/DELETE`. New self-service `createTestimonial` (any authenticated member; author name/image are derived server-side from the submitter's own profile, never trusted from client input, to prevent impersonation) always starts `PENDING`. Admin-curated `createTestimonialByAdmin` now goes live as `APPROVED` immediately (requires `authorName`, validated server-side). Public `getTestimonials` now filters `APPROVED` only (was `ACTIVE`). Added `approveTestimonialByAdmin`/`rejectTestimonialByAdmin`.
+- **Category consistency:** `createCategoryByAdmin` now rejects a `categoryKey` that isn't a real `TourCategory`/`BoardArticleCategory` enum value for the given `categoryType` — closes a gap where an admin could otherwise create an orphan category row referencing nothing.
+- Everything else in the checklist (Article ownership/admin-moderation, Destination/Tour multi-image galleries, Tour schema readiness) was already correct from the first pass — verified, not changed.
+
+Validation: API and batch `tsc --noEmit`, `npm run build` (both apps), `jest` (15 tests — `tour.service.spec.ts` updated for the new `DestinationService` constructor param), and a runtime bootstrap (schema built, all new operations — `requestAgentRole`, `approveAgentRequestByAdmin`, `rejectAgentRequestByAdmin`, `getAgentRequestsByAdmin`, `createTestimonial`, `approveTestimonialByAdmin`, `rejectTestimonialByAdmin` — confirmed present in the compiled bundle) all passed. No GraphQL type-name collisions this round.
