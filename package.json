@@ -13,7 +13,7 @@
 		"start:dev:batch": "nest start gotrip-batch --watch",
 		"start:debug": "nest start --debug --watch",
 		"start:prod": "NODE_ENV=production node dist/apps/gotrip-api/main",
-		"start:prod:batch": "node dist/apps/gotrip-batch/main",
+		"start:prod:batch": "NODE_ENV=production node dist/apps/gotrip-batch/main",
 		"lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
 		"train": "nodemon --watch . --exec ts-node train.ts",
 		"test": "jest",
