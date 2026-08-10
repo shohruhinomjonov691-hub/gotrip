@@ -1,0 +1,17 @@
+{
+	"version": "0.0.1",
+	"configurations": [
+		{
+			"name": "gotrip-next",
+			"runtimeExecutable": "bash",
+			"runtimeArgs": ["-c", "cd /Users/shokhrukhbekinomjonov/Desktop/Projects/GoTrip-next && yarn dev"],
+			"port": 3003
+		},
+		{
+			"name": "gotrip-api",
+			"runtimeExecutable": "bash",
+			"runtimeArgs": ["-c", "cd /Users/shokhrukhbekinomjonov/Desktop/Projects/GoTrip && npm run start:dev"],
+			"port": 3007
+		}
+	]
+}
