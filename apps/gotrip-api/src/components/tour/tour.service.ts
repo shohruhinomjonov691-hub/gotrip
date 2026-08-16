@@ -37,7 +37,37 @@ export class TourService {
 		private aiTranslationService: AiTranslationService,
 	) {}
 
-	private queueTranslation(tour: Tour): void {
+	private static readonly TRANSLATABLE_KEYS = [
+		'tourTitle',
+		'tourDesc',
+		'tourMeetingPoint',
+		'tourItinerary',
+		'tourIncluded',
+		'tourExcluded',
+	] as const;
+
+	// On edit, a field the guide actually changed must be re-translated even
+	// though its old locale entries are already "complete" — AiTranslationService
+	// only fills in what looks missing, so a changed field is masked out of the
+	// snapshot handed to it (in-memory only) to make it look missing again.
+	// createTour has nothing to diff against, so it never passes changedKeys.
+	private diffTranslatableFields(current: Tour, input: TourUpdate): string[] {
+		return TourService.TRANSLATABLE_KEYS.filter((key) => {
+			if (!(key in input)) return false;
+			return JSON.stringify((input as T)[key]) !== JSON.stringify(current[key]);
+		});
+	}
+
+	private queueTranslation(tour: Tour, changedKeys?: string[]): void {
+		let existingTranslations = tour.translations as unknown as TranslationEntryLike[];
+		if (changedKeys?.length) {
+			existingTranslations = existingTranslations?.map((entry) => {
+				const masked = { ...entry };
+				for (const key of changedKeys) delete masked[key];
+				return masked;
+			});
+		}
+
 		this.aiTranslationService.translateEntityAsync(this.tourModel, {
 			entityType: 'tour',
 			entityId: tour._id,
@@ -49,7 +79,7 @@ export class TourService {
 				tourIncluded: tour.tourIncluded,
 				tourExcluded: tour.tourExcluded,
 			},
-			existingTranslations: tour.translations as unknown as TranslationEntryLike[],
+			existingTranslations,
 		});
 	}
 
@@ -146,7 +176,7 @@ export class TourService {
 			await this.memberService.memberStatsEditor({ _id: result.memberId, targetKey: 'memberTours', modifier });
 		}
 
-		this.queueTranslation(result);
+		this.queueTranslation(result, this.diffTranslatableFields(current, input));
 		return result;
 	}
 
@@ -316,7 +346,7 @@ export class TourService {
 			await this.memberService.memberStatsEditor({ _id: result.memberId, targetKey: 'memberTours', modifier });
 		}
 
-		this.queueTranslation(result);
+		this.queueTranslation(result, this.diffTranslatableFields(current, input));
 		return result;
 	}
 
