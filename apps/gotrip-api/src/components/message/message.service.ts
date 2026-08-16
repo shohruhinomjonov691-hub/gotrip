@@ -279,15 +279,27 @@ export class MessageService {
 		return result[0] as Messages;
 	}
 
-	/** Marks everything addressed to the caller in a thread as read. */
+	/** Marks everything addressed to the caller in a thread as read, then tells
+	 *  the sender's live tab in realtime — mirrors the emit in persistMessage. */
 	public async markConversationRead(memberId: ObjectId, conversationId: ObjectId): Promise<boolean> {
-		await this.assertParticipant(memberId, conversationId);
-		await this.messageModel
+		const conversation = await this.assertParticipant(memberId, conversationId);
+		const readAt = new Date();
+		const { modifiedCount } = await this.messageModel
 			.updateMany(
 				{ conversationId, receiverId: memberId, messageStatus: MessageStatus.SENT },
-				{ messageStatus: MessageStatus.READ, readAt: new Date() },
+				{ messageStatus: MessageStatus.READ, readAt },
 			)
 			.exec();
+
+		if (modifiedCount > 0) {
+			this.socketGateway.emitToConversation((conversation.participants as any[]).map(String), {
+				event: 'messagesRead',
+				conversationId: String(conversationId),
+				readerId: String(memberId),
+				readAt,
+			});
+		}
+
 		return true;
 	}
 
