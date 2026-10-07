@@ -33,6 +33,7 @@ describe('ConversationResolver (GraphQL)', () => {
 		deleteConversation: jest.fn(),
 	};
 	const authService = { retrieveAuthMember: jest.fn().mockResolvedValue(null) };
+	const socketGateway = { emitToMember: jest.fn() };
 
 	const GUEST = `mutation($input: SendGuestMessageInput!) { sendGoTripAIGuestMessage(input: $input) { role content status } }`;
 	const gql = (query: string, variables?: Record<string, unknown>, ip = '10.0.0.1') =>
@@ -52,7 +53,7 @@ describe('ConversationResolver (GraphQL)', () => {
 				ConversationResolver,
 				{ provide: GoTripAIService, useValue: gotripAIService },
 				{ provide: ConversationService, useValue: conversationService },
-				{ provide: SocketGateway, useValue: { emitToMember: jest.fn() } },
+				{ provide: SocketGateway, useValue: socketGateway },
 				{ provide: AuthService, useValue: authService },
 				{ provide: APP_GUARD, useClass: GqlThrottlerGuard },
 			],
@@ -192,5 +193,54 @@ describe('ConversationResolver (GraphQL)', () => {
 		for (const mock of [...Object.values(gotripAIService), ...Object.values(conversationService)]) {
 			expect(mock).not.toHaveBeenCalled();
 		}
+	});
+
+	describe('streamGoTripAIMessage requestId', () => {
+		const STREAM = `mutation($input: SendMessageInput!) { streamGoTripAIMessage(input: $input) { _id } }`;
+		const authed = (variables: Record<string, unknown>, ip: string) =>
+			request(app.getHttpServer())
+				.post('/graphql')
+				.set('X-Test-Ip', ip)
+				.set('Authorization', 'Bearer test-token')
+				.send({ query: STREAM, variables });
+
+		it('stamps the caller requestId on every frame of the send (delta, done, failure) and it cannot be overwritten', async () => {
+			authService.retrieveAuthMember.mockResolvedValueOnce({ _id: 'member-1' });
+			gotripAIService.streamMessage.mockImplementation(async (_memberId, _input, onEvent) => {
+				onEvent({ conversationId: 'c1', messageId: 'm1', delta: 'Hel', done: false });
+				onEvent({ conversationId: 'c1', messageId: 'm1', delta: '', done: true, requestId: 'spoofed' });
+				onEvent({ conversationId: 'c1', messageId: 'm1', delta: 'GoTrip AI could not generate a reply', done: true });
+				const now = new Date();
+				return {
+					_id: 'm1',
+					conversationId: 'c1',
+					memberId: 'member-1',
+					role: MessageRole.ASSISTANT,
+					content: 'Hel',
+					status: MessageStatus.COMPLETE,
+					createdAt: now,
+					updatedAt: now,
+				};
+			});
+
+			const res = await authed({ input: { content: 'hi', requestId: 'req-123_A' } }, '10.0.5.1');
+
+			expect(res.body.errors).toBeUndefined();
+			const frames = socketGateway.emitToMember.mock.calls;
+			expect(frames).toHaveLength(3);
+			for (const [memberId, frame] of frames) {
+				expect(memberId).toBe('member-1');
+				expect(frame).toMatchObject({ event: 'gotripAiStream', requestId: 'req-123_A' });
+			}
+		});
+
+		it('rejects a malformed requestId before streaming', async () => {
+			authService.retrieveAuthMember.mockResolvedValueOnce({ _id: 'member-1' });
+
+			const res = await authed({ input: { content: 'hi', requestId: 'bad id!' } }, '10.0.5.2');
+
+			expect(JSON.stringify(res.body.errors ?? [])).toMatch(/requestId may only contain/);
+			expect(gotripAIService.streamMessage).not.toHaveBeenCalled();
+		});
 	});
 });

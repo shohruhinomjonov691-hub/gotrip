@@ -58,6 +58,19 @@ export class SendMessageInput {
 	@IsOptional()
 	@Field(() => [String], { nullable: true })
 	contextSources?: string[];
+
+	/**
+	 * Client-generated id for one streaming send. Echoed on every
+	 * `gotripAiStream` socket frame of that send (deltas, done, error), so the
+	 * client can ignore frames from any other request — a stream left running
+	 * by New chat / a conversation switch, or another tab's send.
+	 */
+	@IsOptional()
+	@IsString()
+	@Length(1, 64)
+	@Matches(/^[A-Za-z0-9_-]+$/, { message: 'requestId may only contain letters, digits, "_" and "-"' })
+	@Field(() => String, { nullable: true })
+	requestId?: string;
 }
 
 /** Limits for the unauthenticated guest flow — see GoTripAIService.sendGuestMessage. */

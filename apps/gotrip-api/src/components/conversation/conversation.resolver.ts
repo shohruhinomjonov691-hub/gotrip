@@ -79,8 +79,12 @@ export class ConversationResolver {
 		@Args('input') input: SendMessageInput,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<AIMessage> {
+		// requestId is stamped last so every frame of this send (delta, done, the
+		// failure/placeholder frames) carries the caller's id, and nothing in the
+		// event payload can overwrite it.
+		const requestId = input.requestId ?? null;
 		return await this.gotripAIService.streamMessage(memberId, input, (event: GoTripAIStreamEvent) => {
-			this.socketGateway.emitToMember(memberId.toString(), { event: 'gotripAiStream', ...event });
+			this.socketGateway.emitToMember(memberId.toString(), { event: 'gotripAiStream', ...event, requestId });
 		});
 	}
 
