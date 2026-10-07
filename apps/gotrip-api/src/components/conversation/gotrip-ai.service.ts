@@ -1,7 +1,13 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ObjectId } from 'mongoose';
-import { AIConversation, AIMessage } from '../../libs/dto/conversation/conversation';
-import { SendMessageInput } from '../../libs/dto/conversation/conversation.input';
+import { AIConversation, AIGuestReply, AIMessage } from '../../libs/dto/conversation/conversation';
+import {
+	GUEST_HISTORY_CONTENT_MAX_LENGTH,
+	GUEST_HISTORY_MAX_ITEMS,
+	GUEST_HISTORY_ROLES,
+	SendGuestMessageInput,
+	SendMessageInput,
+} from '../../libs/dto/conversation/conversation.input';
 import { MessageRole, MessageStatus } from '../../libs/enums/conversation.enum';
 import { Locale } from '../../libs/enums/locale.enum';
 import { shapeIntoMongoObjectId } from '../../libs/config';
@@ -11,12 +17,32 @@ import { PromptBuilderService } from './prompt-builder.service';
 import { ToolRegistryService } from './tools/tool-registry.service';
 import { CHAT_PROVIDER } from './providers/chat-provider.interface';
 import type { ChatMessage, ChatProvider } from './providers/chat-provider.interface';
-import type { GoTripAIContextSources } from '../../libs/dto/conversation/context.types';
+import type { GoTripAIContextSourceKey, GoTripAIContextSources } from '../../libs/dto/conversation/context.types';
 import type { GoTripAIStreamEvent, GoTripAIStreamPublisher } from './streaming/streaming.types';
 
 /** Placeholder shown while no ChatProvider is bound — same transparency convention as the frontend's Phase 4.1 placeholder reply, and as AiTranslationService's graceful-failure logging. */
 const PROVIDER_NOT_CONNECTED_MESSAGE =
 	'GoTrip AI is not connected to an AI provider yet. This will be available once a provider is configured.';
+
+const GENERIC_FAILURE_MESSAGE = 'GoTrip AI could not generate a reply just now. Please try again.';
+
+/**
+ * Guest turns only ever see catalog/community content — never userProfile,
+ * wishlist, recentlyViewed or bookingHistory, even though those collectors
+ * already return empty for a null memberId. Whitelisting the sources keeps
+ * that guarantee from depending on each collector's null-check.
+ */
+export const GUEST_CONTEXT_SOURCES: GoTripAIContextSourceKey[] = [
+	'tours',
+	'destinations',
+	'articles',
+	'notices',
+	'faq',
+	'guides',
+];
+export const GUEST_MAX_TOKENS = 400;
+export const GUEST_TIMEOUT_MS = 30_000;
+export const GUEST_MAX_RETRIES = 0;
 
 /**
  * The top-level facade — the one entry point a future resolver calls
@@ -169,6 +195,62 @@ export class GoTripAIService {
 			});
 			return this.conversationService.finalizeStreamingMessage(pending._id, failureContent, MessageStatus.FAILED);
 		}
+	}
+
+	/**
+	 * Unauthenticated, stateless counterpart of sendMessage. Nothing is read
+	 * from or written to AIConversation/AIMessage: the client replays its own
+	 * recent turns (`history`), which are treated as untrusted — re-filtered to
+	 * USER/ASSISTANT, re-capped in count and length here even though the DTO
+	 * already validated them. Context is public sources only. The provider
+	 * call is tighter than the authenticated one (smaller reply, short
+	 * timeout, no retries) so one guest request has a bounded cost/latency.
+	 * Never throws on a provider failure — returns a FAILED reply instead.
+	 */
+	public async sendGuestMessage(input: SendGuestMessageInput): Promise<AIGuestReply> {
+		const locale = input.locale ?? Locale.en;
+
+		if (!this.chatProvider) {
+			this.logger.warn('sendGuestMessage called with no ChatProvider bound.');
+			return this.guestFailure(PROVIDER_NOT_CONNECTED_MESSAGE);
+		}
+
+		const context = await this.contextService.buildContext({
+			memberId: null,
+			locale,
+			currentPage: input.currentPage,
+			sources: GUEST_CONTEXT_SOURCES,
+		});
+
+		const history = (input.history ?? [])
+			.filter((message) => GUEST_HISTORY_ROLES.includes(message.role) && typeof message.content === 'string')
+			.slice(-GUEST_HISTORY_MAX_ITEMS)
+			.map((message) => ({ role: message.role, content: message.content.slice(0, GUEST_HISTORY_CONTENT_MAX_LENGTH) }));
+
+		const messages = this.promptBuilder.buildMessages(history, input.content, context);
+
+		try {
+			const result = await this.chatProvider.complete({
+				messages,
+				locale,
+				tools: this.toolRegistry.getDefinitions(),
+				maxTokens: GUEST_MAX_TOKENS,
+				timeoutMs: GUEST_TIMEOUT_MS,
+				maxRetries: GUEST_MAX_RETRIES,
+			});
+			if (!result.content?.trim()) {
+				this.logger.warn(`Guest reply was empty (finishReason: ${result.finishReason ?? 'unknown'}).`);
+				return this.guestFailure(GENERIC_FAILURE_MESSAGE);
+			}
+			return { role: MessageRole.ASSISTANT, content: result.content, status: MessageStatus.COMPLETE };
+		} catch (err) {
+			this.logger.error(`ChatProvider "${this.chatProvider.name}" guest call failed: ${(err as Error).message}`);
+			return this.guestFailure(GENERIC_FAILURE_MESSAGE);
+		}
+	}
+
+	private guestFailure(content: string): AIGuestReply {
+		return { role: MessageRole.SYSTEM, content, status: MessageStatus.FAILED };
 	}
 
 	private async resolveConversation(

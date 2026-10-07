@@ -23,6 +23,9 @@ export interface ChatCompletionRequest {
 	tools?: ToolDefinition[];
 	maxTokens?: number;
 	temperature?: number;
+	/** Per-request transport overrides, applied by complete() (the guest path). Omitted = the provider SDK's own defaults; the authenticated flow never sets these. */
+	timeoutMs?: number;
+	maxRetries?: number;
 }
 
 export interface ChatCompletionResult {

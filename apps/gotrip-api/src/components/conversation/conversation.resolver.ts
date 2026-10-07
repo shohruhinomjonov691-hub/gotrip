@@ -1,11 +1,19 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Throttle } from '@nestjs/throttler';
 import * as mongoose from 'mongoose';
 import { shapeIntoMongoObjectId } from '../../libs/config';
-import { AIConversation, AIConversations, AIMessage, AIMessages } from '../../libs/dto/conversation/conversation';
+import {
+	AIConversation,
+	AIConversations,
+	AIGuestReply,
+	AIMessage,
+	AIMessages,
+} from '../../libs/dto/conversation/conversation';
 import {
 	ConversationsInquiry,
 	MessagesInquiry,
+	SendGuestMessageInput,
 	SendMessageInput,
 } from '../../libs/dto/conversation/conversation.input';
 import { ConversationUpdate } from '../../libs/dto/conversation/conversation.update';
@@ -33,6 +41,14 @@ import type { GoTripAIStreamEvent } from './streaming/streaming.types';
  * source of truth if a client never opened a socket at all (e.g. a slow
  * connection), the socket frames are purely a faster, incremental preview.
  */
+/**
+ * Per-IP (the throttler's default tracker, req.ip) limit for the
+ * unauthenticated guest mutation. In-memory storage: per process, reset on
+ * restart, and behind a reverse proxy without `trust proxy` every guest
+ * shares the proxy's IP — see docs/ai/COMPLETED_TASKS.md.
+ */
+export const GUEST_AI_THROTTLE = { default: { limit: 5, ttl: 60000 } };
+
 @Resolver()
 export class ConversationResolver {
 	constructor(
@@ -48,6 +64,13 @@ export class ConversationResolver {
 		@AuthMember('_id') memberId: mongoose.ObjectId,
 	): Promise<AIMessage> {
 		return await this.gotripAIService.sendMessage(memberId, input);
+	}
+
+	/** No auth guard on purpose — guests are the audience. Stateless: nothing is persisted, context is public-only. */
+	@Throttle(GUEST_AI_THROTTLE)
+	@Mutation(() => AIGuestReply)
+	public async sendGoTripAIGuestMessage(@Args('input') input: SendGuestMessageInput): Promise<AIGuestReply> {
+		return await this.gotripAIService.sendGuestMessage(input);
 	}
 
 	@UseGuards(AuthGuard)

@@ -60,6 +60,19 @@ export class AIMessage {
 	updatedAt: Date;
 }
 
+/** A guest turn's reply — never persisted, so no _id/conversationId/memberId. */
+@ObjectType()
+export class AIGuestReply {
+	@Field(() => MessageRole)
+	role: MessageRole;
+
+	@Field(() => String)
+	content: string;
+
+	@Field(() => MessageStatus)
+	status: MessageStatus;
+}
+
 @ObjectType()
 export class AIConversation {
 	@Field(() => String)

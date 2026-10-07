@@ -1,8 +1,21 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsIn, IsNotEmpty, IsOptional, Length, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+	ArrayMaxSize,
+	IsArray,
+	IsIn,
+	IsNotEmpty,
+	IsOptional,
+	IsString,
+	Length,
+	Matches,
+	Max,
+	Min,
+	ValidateNested,
+} from 'class-validator';
 import { availableConversationSorts, availableMessageSorts } from '../../config';
 import { Direction } from '../../enums/common.enum';
-import { ConversationStatus } from '../../enums/conversation.enum';
+import { ConversationStatus, MessageRole } from '../../enums/conversation.enum';
 import { Locale } from '../../enums/locale.enum';
 
 @InputType()
@@ -45,6 +58,57 @@ export class SendMessageInput {
 	@IsOptional()
 	@Field(() => [String], { nullable: true })
 	contextSources?: string[];
+}
+
+/** Limits for the unauthenticated guest flow — see GoTripAIService.sendGuestMessage. */
+export const GUEST_CONTENT_MAX_LENGTH = 1000;
+export const GUEST_HISTORY_MAX_ITEMS = 10;
+export const GUEST_HISTORY_CONTENT_MAX_LENGTH = 2000;
+/** The only roles a guest may replay — SYSTEM/TOOL from a client would be a prompt-injection vector. */
+export const GUEST_HISTORY_ROLES = [MessageRole.USER, MessageRole.ASSISTANT];
+
+/**
+ * One prior turn of a guest chat, replayed by the client because guest turns
+ * are never persisted. Untrusted input: role is whitelisted here and again
+ * in GoTripAIService before it reaches the prompt.
+ */
+@InputType()
+export class GuestHistoryMessageInput {
+	@IsIn(GUEST_HISTORY_ROLES)
+	@Field(() => MessageRole)
+	role: MessageRole;
+
+	@IsString()
+	@Length(1, GUEST_HISTORY_CONTENT_MAX_LENGTH)
+	@Field(() => String)
+	content: string;
+}
+
+@InputType()
+export class SendGuestMessageInput {
+	@IsString()
+	@Length(1, GUEST_CONTENT_MAX_LENGTH)
+	@Matches(/\S/, { message: 'content must not be blank' })
+	@Field(() => String)
+	content: string;
+
+	@IsOptional()
+	@Field(() => Locale, { nullable: true })
+	locale?: Locale;
+
+	@IsOptional()
+	@IsString()
+	@Length(1, 200)
+	@Field(() => String, { nullable: true })
+	currentPage?: string;
+
+	@IsOptional()
+	@IsArray()
+	@ArrayMaxSize(GUEST_HISTORY_MAX_ITEMS)
+	@ValidateNested({ each: true })
+	@Type(() => GuestHistoryMessageInput)
+	@Field(() => [GuestHistoryMessageInput], { nullable: true })
+	history?: GuestHistoryMessageInput[];
 }
 
 @InputType()

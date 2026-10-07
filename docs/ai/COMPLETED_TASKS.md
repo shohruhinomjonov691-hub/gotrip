@@ -743,3 +743,27 @@ A follow-up same-day pass, prompted by an explicit business-rule checklist, that
 - Everything else in the checklist (Article ownership/admin-moderation, Destination/Tour multi-image galleries, Tour schema readiness) was already correct from the first pass — verified, not changed.
 
 Validation: API and batch `tsc --noEmit`, `npm run build` (both apps), `jest` (15 tests — `tour.service.spec.ts` updated for the new `DestinationService` constructor param), and a runtime bootstrap (schema built, all new operations — `requestAgentRole`, `approveAgentRequestByAdmin`, `rejectAgentRequestByAdmin`, `getAgentRequestsByAdmin`, `createTestimonial`, `approveTestimonialByAdmin`, `rejectTestimonialByAdmin` — confirmed present in the compiled bundle) all passed. No GraphQL type-name collisions this round.
+
+## 2026-10-08 - Guest (Login-Free) GoTrip AI Access
+
+Branch `fix/guest-ai-access` (backend and gotrip-next). Additive: the 7 existing authenticated GoTrip AI operations keep `AuthGuard` and memberId-scoped ownership unchanged.
+
+Backend:
+- New `sendGoTripAIGuestMessage(input: SendGuestMessageInput): AIGuestReply` mutation (`conversation.resolver.ts`), no auth guard, `@Throttle` 5 requests/min per `req.ip`.
+- `SendGuestMessageInput`: `content` 1–1000 chars (not blank); `history` ≤ 10 items, each `role` ∈ {USER, ASSISTANT} and `content` 1–2000 chars; optional `locale`, `currentPage` (≤ 200). Extra fields rejected by the global `ValidationPipe`.
+- `GoTripAIService.sendGuestMessage` is stateless: never calls `ConversationService` (no `aiConversations`/`aiConversationMessages` writes or reads), re-filters history roles/length/count server-side, builds context only from `GUEST_CONTEXT_SOURCES` (tours, destinations, articles, notices, faq, guides) with `memberId: null`.
+- Guest provider call: `maxTokens` 400, `timeoutMs` 30000, `maxRetries` 0 via new optional `ChatCompletionRequest.timeoutMs/maxRetries`, applied by `OpenAIChatProvider.complete()` only when set. Authenticated `sendMessage`/`streamMessage` do not set them, so their SDK defaults and 700-token cap are unchanged.
+- Provider errors, empty replies and a missing provider return `{ role: SYSTEM, status: FAILED }` with a generic message; the error text is only logged server-side.
+
+Frontend (gotrip-next):
+- `useGoTripAI` sends guests through `SEND_GOTRIP_AI_GUEST_MESSAGE`, keeping the chat only in component state and replaying the last 10 USER/ASSISTANT turns as `history`. Refresh loses it by design.
+- History panel/toggle hidden for guests; a "Guest chats are not saved — log in" note links to `/account/join`.
+- Any `memberId` change (login, logout, account switch) clears the in-memory chat, summaries and draft. The active conversation pointer is now stored with its owner (`gotrip-ai-active-conversation-owner`) and only resumed for that member; logout clears both keys. A guest chat is never migrated into an account. Pointers saved before this change have no owner key, so they are not resumed once.
+
+Validation: API and batch `tsc --noEmit`, `npm run build`, `jest` (8 suites / 42 tests; new: `gotrip-ai.service.spec.ts`, `openai-chat.provider.spec.ts`, `conversation.resolver.spec.ts` — the last is an in-process GraphQL app with real `ValidationPipe`, `AuthGuard` and throttler guard over mocked services). Frontend `yarn typecheck`, `yarn build`, `next lint` on changed files. No real AI provider call, no DB connection, no end-to-end browser run (see limitations).
+
+Known limitations (not production-ready claims):
+- Throttler storage is in-memory: per process, reset on restart, not shared across instances.
+- `trust proxy` is not set (unchanged). Behind a reverse proxy every guest would share the proxy IP and one 5/min bucket. Needs the deployment topology confirmed first.
+- No daily/global AI budget or spend cap exists for guests or members.
+- With a reasoning model, a 400-token cap may sometimes leave no visible text; the guest then gets the generic FAILED reply. Needs a real-model check.

@@ -63,13 +63,16 @@ export class OpenAIChatProvider implements ChatProvider {
 	public async complete(request: ChatCompletionRequest): Promise<ChatCompletionResult> {
 		this.assertConfigured();
 		try {
-			const completion = await this.client.chat.completions.create({
-				model: this.model,
-				messages: request.messages.map(toOpenAiMessage),
-				tools: toOpenAiTools(request.tools),
-				max_completion_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
-				stream: false,
-			});
+			const completion = await this.client.chat.completions.create(
+				{
+					model: this.model,
+					messages: request.messages.map(toOpenAiMessage),
+					tools: toOpenAiTools(request.tools),
+					max_completion_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
+					stream: false,
+				},
+				toRequestOptions(request),
+			);
 
 			const choice = completion.choices[0];
 			return {
@@ -166,6 +169,15 @@ function toOpenAiMessage(message: ChatMessage): ChatCompletionMessageParam {
 		return { role: 'tool', content: message.content, tool_call_id: message.toolCallId ?? '' };
 	}
 	return { role: ROLE_TO_OPENAI[message.role], content: message.content } as ChatCompletionMessageParam;
+}
+
+/** Only overrides what the caller set — an empty request leaves the SDK's default timeout/retries untouched. */
+function toRequestOptions(request: ChatCompletionRequest): { timeout?: number; maxRetries?: number } | undefined {
+	if (request.timeoutMs === undefined && request.maxRetries === undefined) return undefined;
+	return {
+		...(request.timeoutMs !== undefined ? { timeout: request.timeoutMs } : {}),
+		...(request.maxRetries !== undefined ? { maxRetries: request.maxRetries } : {}),
+	};
 }
 
 function toOpenAiTools(tools?: ToolDefinition[]): ChatCompletionTool[] | undefined {

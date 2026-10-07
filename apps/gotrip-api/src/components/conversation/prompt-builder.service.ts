@@ -85,7 +85,11 @@ export class PromptBuilderService {
 	 * The single call GoTripAIService makes once a provider exists:
 	 * system prompt, then conversation history in order, then the new turn.
 	 */
-	public buildMessages(history: AIMessage[], userMessage: string, context: GoTripAIContextSources): ChatMessage[] {
+	public buildMessages(
+		history: Pick<AIMessage, 'role' | 'content' | 'toolCallId'>[],
+		userMessage: string,
+		context: GoTripAIContextSources,
+	): ChatMessage[] {
 		const messages: ChatMessage[] = [{ role: MessageRole.SYSTEM, content: this.buildSystemPrompt(context) }];
 
 		for (const message of history) {
