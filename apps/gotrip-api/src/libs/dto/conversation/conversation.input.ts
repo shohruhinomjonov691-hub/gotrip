@@ -96,11 +96,10 @@ export class SendGuestMessageInput {
 	@Field(() => Locale, { nullable: true })
 	locale?: Locale;
 
-	@IsOptional()
-	@IsString()
-	@Length(1, 200)
-	@Field(() => String, { nullable: true })
-	currentPage?: string;
+	// No `currentPage` on purpose: PromptBuilderService puts it verbatim into
+	// the SYSTEM prompt, so for an unauthenticated caller it would be a way to
+	// lift arbitrary text to instruction level. Sending it is rejected by the
+	// global ValidationPipe (forbidNonWhitelisted).
 
 	@IsOptional()
 	@IsArray()

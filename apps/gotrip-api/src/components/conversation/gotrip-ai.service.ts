@@ -202,7 +202,9 @@ export class GoTripAIService {
 	 * from or written to AIConversation/AIMessage: the client replays its own
 	 * recent turns (`history`), which are treated as untrusted — re-filtered to
 	 * USER/ASSISTANT, re-capped in count and length here even though the DTO
-	 * already validated them. Context is public sources only. The provider
+	 * already validated them. Context is public sources only (still read from
+	 * the DB through the public services, including their member/like/view
+	 * lookups; PromptBuilderService strips those before the prompt). The provider
 	 * call is tighter than the authenticated one (smaller reply, short
 	 * timeout, no retries) so one guest request has a bounded cost/latency.
 	 * Never throws on a provider failure — returns a FAILED reply instead.
@@ -215,10 +217,10 @@ export class GoTripAIService {
 			return this.guestFailure(PROVIDER_NOT_CONNECTED_MESSAGE);
 		}
 
+		// No currentPage: it would be client text inside the SYSTEM prompt (see SendGuestMessageInput).
 		const context = await this.contextService.buildContext({
 			memberId: null,
 			locale,
-			currentPage: input.currentPage,
 			sources: GUEST_CONTEXT_SOURCES,
 		});
 
